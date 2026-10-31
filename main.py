@@ -31,6 +31,8 @@ while running:
     if not running:
         break
 
+    # Bot đáp trả sau toàn bộ click: người không thể click thay quân bot trong lượt đó.
+    app.update_bot()
     # Vẽ menu hoặc bàn cờ; chỉ tính hình xem trước khi đang trong ván.
     app.draw()
     view.clock.tick(60)

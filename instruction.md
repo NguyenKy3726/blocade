@@ -204,10 +204,10 @@ Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ t�
 
 12.4. Quy tắc đã chốt và thao tác sau cập nhật
 
-- Mỗi người có đồng hồ riêng, đếm ngược 30 giây cho mỗi lượt. Chỉ bên đang tới lượt chạy đồng hồ; bên chờ giữ nguyên số hiển thị tới lượt tiếp theo.
+- Trong chế độ hai người, mỗi người có đồng hồ riêng, đếm ngược 30 giây cho mỗi lượt. Chỉ bên đang tới lượt chạy đồng hồ; bên chờ giữ nguyên số hiển thị tới lượt tiếp theo.
 - Đi quân hoặc đặt tường hợp lệ kết thúc lượt. Khi nhận lượt mới, đồng hồ của người đó được đặt lại thành 30 giây.
 - Hết giờ thì mất lượt, không bị xử thua và không bị trừ tường. Nước đi hoặc tường không hợp lệ không đặt lại đồng hồ.
-- Khi có người thắng, cả hai đồng hồ dừng. Nút Chơi lại ở bên phải bàn dùng được cả trong ván và sau khi thắng: đưa quân về vị trí đầu, xóa tường và màu sở hữu, cấp lại 10 tường và 30 giây mỗi phe, xanh lá đi trước, xóa lựa chọn cũ và thông báo hết giờ. Menu đã có Hai người chơi và Thoát; nút Về menu trên bàn cờ kết thúc luồng ván hiện tại, vào lại bắt đầu ván mới.
+- Khi có người thắng, cả hai đồng hồ dừng. Nút Chơi lại ở bên phải bàn dùng được cả trong ván và sau khi thắng: đưa quân về vị trí đầu, xóa tường và màu sở hữu, cấp lại 10 tường và 30 giây mỗi phe, xanh lá đi trước, xóa lựa chọn cũ và thông báo hết giờ. Menu đã có Hai người chơi, Đấu bot dễ và Thoát; nút Về menu trên bàn cờ kết thúc luồng ván hiện tại, vào lại bắt đầu ván mới.
 - Đưa chuột vào khe ngang/dọc để xem trước; click trái để xác nhận đặt tường. Tại giao điểm, hướng theo đường giữa khe gần chuột hơn; nếu bằng nhau thì chưa chọn hướng, hãy dịch chuột vào khe muốn đặt.
 - Đặt tường hoàn toàn bằng chuột; H/V/Esc không thay đổi hướng hoặc chế độ chơi.
 - Hai phe dùng màu xanh lá (người chơi 1) và xanh nước (người chơi 2), áp dụng cho quân và tường đã đặt.
@@ -222,20 +222,31 @@ Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ t�
 - `game/commands.py` định nghĩa giao diện `Command.execute()` và hai lệnh `MoveCommand`, `PlaceWallCommand`.
 - Controller nhận click, đổi tọa độ chuột thành ô đích hoặc tường rồi tạo lệnh và gọi `execute()` ngay. Lệnh không được lưu hàng đợi hoặc tự chạy lại.
 - Tạo Command chỉ lưu yêu cầu; `execute()` mới gọi Game và trả về True/False. Game vẫn là nơi kiểm tra nước đi, tường, BFS, số tường, thời gian và cập nhật lượt/kết quả. Không chép luật sang Command hoặc controller.
-- Xem trước không thực thi Command. Chơi lại và hết giờ vẫn do luồng hiện tại xử lý, chưa có hoàn tác/lịch sử hoặc bot.
+- Xem trước không thực thi Command. Chơi lại và hết giờ vẫn do luồng hiện tại xử lý, chưa có hoàn tác/lịch sử.
 
 12.6. Quy tắc đấu bot/Undo đã chốt và lộ trình tiếp theo
 
 Mục này ưu tiên hơn thứ tự cũ khi có khác nhau:
 - Chế độ hai người vẫn có 30 giây mỗi lượt như mục 12.4.
-- Chế độ đấu bot sẽ không chạy, không hiển thị đồng hồ và không có mất lượt do hết giờ.
+- Chế độ đấu bot không chạy, không hiển thị đồng hồ và không có mất lượt do hết giờ.
 - Undo khi đấu bot: nếu bot đã đáp trả, hoàn tác cả hành động của bot và hành động trước đó của người, trả về lượt người để chọn lại. Nếu bot chưa đi, chỉ hoàn tác hành động của người. Không cho hoàn tác khi chưa có hành động; không Undo xuyên qua Chơi lại/ván mới.
 - Lịch sử sẽ chỉ lưu hành động thành công. Khi hoàn tác cần phục hồi vị trí quân, tường/cạnh bị chặn, chủ sở hữu và số tường, lượt và kết quả ván; đây là phần phải bổ sung cho Command, chưa có trong bản menu.
 
-1. Menu (bước hiện tại): mở ứng dụng ở menu, vào Hai người chơi, Chơi lại/Về menu cả trước và sau thắng; không tính giờ ở menu. Vào lại bắt đầu ván mới, không tiếp tục ván cũ. Chưa đưa nút đấu bot vào khi chưa có bot.
-2. Bot dễ: thêm lựa chọn đấu bot trên menu, dùng chung luật/Command, tắt toàn bộ đồng hồ cho chế độ bot; kiểm tra luồng người đi rồi bot đáp trả.
-3. Undo đấu bot: bổ sung trạng thái trước hành động, lịch sử và hoàn tác cặp lượt theo quy tắc trên; xóa lịch sử khi Chơi lại hoặc bắt đầu ván mới.
+1. Menu (đã hoàn thành): mở ứng dụng ở menu, vào Hai người chơi, Chơi lại/Về menu cả trước và sau thắng; không tính giờ ở menu. Vào lại bắt đầu ván mới, không tiếp tục ván cũ. Lựa chọn Đấu bot dễ đã được thêm khi bot hoạt động.
+2. Bot dễ (đã hoàn thành): lựa chọn Đấu bot dễ trên menu, dùng chung luật/Command, không có đồng hồ; người đi rồi bot đáp trả.
+3. Undo đấu bot (bước tiếp theo): bổ sung trạng thái trước hành động, lịch sử và hoàn tác cặp lượt theo quy tắc trên; xóa lịch sử khi Chơi lại hoặc bắt đầu ván mới.
 4. Bot trung bình rồi khó: dùng Strategy/Factory theo cấp; bổ sung BFS khoảng cách và thuật toán phù hợp khi cần.
 5. Hoàn thiện báo cáo/sơ đồ OOP/pattern; cân nhắc State khi luồng thực tế phức tạp hơn.
 
 Luồng menu hiện dùng `AppController` với hai trạng thái menu/game và `MenuView` dùng cùng cửa sổ/font với `GameView`; chưa triển khai đầy đủ State pattern. Vẫn không thêm thông báo lý do hành động bị từ chối theo lựa chọn của người chơi.
+
+12.7. Cách chơi với bot dễ hiện tại
+
+- Chọn Đấu bot dễ ở menu. Bạn là xanh lá, đi trước; bot là xanh nước.
+- Bạn có thể đi quân hoặc đặt tường bằng chuột. Bot đáp trả một nước sau hành động hợp lệ của bạn, qua MoveCommand; click sai không khiến bot được đi.
+- Bot dễ chỉ đi quân: lấy danh sách nước hợp lệ từ Game (bao gồm nhảy), dùng BFS đánh giá đường còn lại qua tường rồi chọn nước có khoảng cách nhỏ nhất. Nếu hòa, chọn ngẫu nhiên. Bot chưa đánh giá đặt tường hoặc nhìn trước nước đáp trả.
+- `PathFinder.shortest_distance` tính số cạnh tới hàng đích, bỏ qua vị trí quân. Đây là ước lượng để chọn trong các nước đã hợp lệ, không thay thế luật nhảy của Game.
+- Bot chạy sau khi xử lý các sự kiện của khung hình, không dùng sleep/thread. Trong lượt bot, bỏ click đi quân/đặt tường của người; Chơi lại/Về menu vẫn được ưu tiên.
+- Chơi lại giữ chế độ bot, xanh lá bắt đầu ván mới. Về menu rồi chọn Hai người chơi sẽ bật lại đồng hồ 30 giây/lượt.
+- Kiến trúc có EasyStrategy với choose_command; chưa cần Factory chọn cấp khi chỉ có một cấp bot. Undo chưa triển khai; tuân theo kế hoạch mục 12.6 ở bước sau.
+- Kiểm tra riêng bot: `python -m unittest discover -s tests -p test_easy_bot.py -v` trong repo. Chạy toàn bộ test với `python -m unittest discover -s tests -v`. Test giao diện dùng SDL headless; vẫn cần chơi thử trên Windows.

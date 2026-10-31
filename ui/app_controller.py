@@ -20,7 +20,8 @@ class AppController:
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return False
         if self.screen == "menu":
-            rects = (self.menu_view.start_button_rect, self.menu_view.exit_button_rect)
+            rects = (self.menu_view.start_button_rect, self.menu_view.bot_button_rect,
+                     self.menu_view.exit_button_rect)
         else:
             view = self.game_controller.view
             rects = (view.restart_button_rect, view.menu_button_rect)
@@ -35,7 +36,10 @@ class AppController:
             if left_click and self.menu_view.exit_button_rect.collidepoint(event.pos):
                 return False
             if left_click and self.menu_view.start_button_rect.collidepoint(event.pos):
-                self.game_controller.restart_game()
+                self.game_controller.restart_game(mode="two_players")
+                self.screen = "game"
+            elif left_click and self.menu_view.bot_button_rect.collidepoint(event.pos):
+                self.game_controller.restart_game(mode="bot")
                 self.screen = "game"
             return True
         if left_click and self.game_controller.view.menu_button_rect.collidepoint(event.pos):
@@ -43,6 +47,12 @@ class AppController:
             self.screen = "menu"
             return True
         return self.game_controller.handle_event(event)
+
+    # Bot không chạy ở menu; nút Về menu/Chơi lại được xử lý trước nước đáp trả.
+    def update_bot(self):
+        if self.screen == "game":
+            return self.game_controller.play_bot_turn()
+        return False
 
     # Vẽ đúng màn hình; xem trước tường chỉ được tính khi đang trong ván.
     def draw(self):

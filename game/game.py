@@ -7,31 +7,46 @@ from game.pathfinder import PathFinder
 
 # Quản lý bàn cờ, người chơi, lượt chơi và kết quả ván.
 class Game:
-    # Khởi tạo ván hai người trên bàn cờ 9×9.
-    def __init__(self, time_source=monotonic):
+    # Khởi tạo ván 9×9, mặc định hai người; chế độ bot được chọn từ menu.
+    def __init__(self, time_source=monotonic, mode="two_players"):
         # Tách đồng hồ khỏi Pygame để kiểm tra mà không cần chờ thật.
         self.time_source = time_source
         self.turn_duration = 30.0
+        self.mode = mode
         self.reset()
 
-    # Bắt đầu lại ván: khôi phục quân, tường, lượt, kết quả và hai đồng hồ.
-    def reset(self):
+    # Bắt đầu lại ván, giữ chế độ cũ nếu không truyền chế độ khác.
+    def reset(self, mode=None):
+        if mode is not None:
+            self.mode = mode
+        if self.mode not in ("two_players", "bot"):
+            raise ValueError("Chế độ chơi không hợp lệ")
         self.board = Board(size=9)
         self.players = [
-            Player("Người chơi 1", 0, 4, 8),
-            Player("Người chơi 2", 8, 4, 0),
+            Player("Bạn" if self.mode == "bot" else "Người chơi 1", 0, 4, 8),
+            Player("Bot dễ" if self.mode == "bot" else "Người chơi 2", 8, 4, 0),
         ]
         self.current_turn = 0
         self.winner = None
         self.path_finder = PathFinder()
         self.time_remaining = [self.turn_duration, self.turn_duration]
-        self.turn_started_at = self.time_source()
+        self.turn_started_at = self.time_source() if self.timer_enabled else None
         self.wall_owners = {}
         self.notice = ""
 
+    # Chỉ chế độ hai người mới dùng đồng hồ và mất lượt do hết giờ.
+    @property
+    def timer_enabled(self):
+        return self.mode == "two_players"
+
+    # Bot là phe xanh nước và không đi tiếp khi đã có người thắng.
+    @property
+    def is_bot_turn(self):
+        return self.mode == "bot" and self.current_turn == 1 and self.winner is None
+
     # Cập nhật riêng đồng hồ bên đang đi; hết giờ thì mất lượt, không xử thua.
     def update_time(self):
-        if self.winner is not None:
+        if not self.timer_enabled or self.winner is not None:
             return False
 
         now = self.time_source()
@@ -47,6 +62,8 @@ class Game:
     # Chuyển sang người còn lại và cấp đủ 30 giây cho lượt mới.
     def _next_turn(self, now=None):
         self.current_turn = 1 - self.current_turn
+        if not self.timer_enabled:
+            return
         self.time_remaining[self.current_turn] = self.turn_duration
         self.turn_started_at = self.time_source() if now is None else now
 

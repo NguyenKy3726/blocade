@@ -5,7 +5,11 @@ from collections import deque
 class PathFinder:
     # Kiểm tra từ ô xuất phát có đường tới hàng đích hay không.
     def has_path(self, board, start, goal_row):
-        queue = deque([start])
+        return self.shortest_distance(board, start, goal_row) is not None
+
+    # Đếm số cạnh ít nhất tới hàng đích, bỏ qua quân để đánh giá đường qua tường.
+    def shortest_distance(self, board, start, goal_row):
+        queue = deque([(start, 0)])
         visited = {start}
 
         directions = [
@@ -16,11 +20,11 @@ class PathFinder:
         ]
 
         while queue:
-            row, col = queue.popleft()
+            (row, col), distance = queue.popleft()
 
             # Chạm tới hàng đích nghĩa là đã tìm thấy đường.
             if row == goal_row:
-                return True
+                return distance
 
             for row_change, col_change in directions:
                 next_cell = (row + row_change, col + col_change)
@@ -33,9 +37,9 @@ class PathFinder:
 
                 if next_cell not in visited:
                     visited.add(next_cell)
-                    queue.append(next_cell)
+                    queue.append((next_cell, distance + 1))
 
-        return False
+        return None
 
     # Kiểm tra lần lượt cả hai người chơi đều còn đường tới hàng đích.
     def both_players_have_paths(self, board, players):

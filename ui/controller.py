@@ -1,6 +1,7 @@
 import pygame
 
 from game.commands import MoveCommand, PlaceWallCommand
+from game.bot.easy import EasyStrategy
 
 
 # Chuyển click chuột thành Command đi quân hoặc đặt tường.
@@ -10,6 +11,7 @@ class GameController:
         self.game = game
         self.view = view
         self.selected_position = None
+        self.bot_strategy = EasyStrategy()
 
     # Nhận diện click trái trong nút Chơi lại, tách khỏi thao tác bàn cờ.
     def is_restart_event(self, event):
@@ -20,8 +22,8 @@ class GameController:
         )
 
     # Chơi lại trên cùng cửa sổ và bỏ trạng thái thao tác của ván cũ.
-    def restart_game(self):
-        self.game.reset()
+    def restart_game(self, mode=None):
+        self.game.reset(mode=mode)
         self.selected_position = None
 
     # Cập nhật đồng hồ và bỏ lựa chọn cũ khi người chơi bị mất lượt.
@@ -30,6 +32,13 @@ class GameController:
         if expired:
             self.selected_position = None
         return expired
+
+    # Thực hiện tối đa một nước bot sau khi xử lý các sự kiện của khung hình.
+    def play_bot_turn(self):
+        if not self.game.is_bot_turn:
+            return False
+        command = self.bot_strategy.choose_command(self.game)
+        return command.execute() if command is not None else False
 
     # Xử lý đóng cửa sổ, chơi lại và các hành động bằng chuột.
     def handle_event(self, event):
@@ -41,7 +50,7 @@ class GameController:
             self.restart_game()
             return True
 
-        if self.update():
+        if self.update() or self.game.is_bot_turn:
             return True
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -76,7 +85,7 @@ class GameController:
 
     # Xem trước cả hai hướng bằng chuột, không làm thay đổi trạng thái ván.
     def get_wall_preview(self, mouse_position):
-        if self.game.winner is not None:
+        if self.game.winner is not None or self.game.is_bot_turn:
             return None
         wall = self.view.wall_at_position(mouse_position)
         if wall is None:

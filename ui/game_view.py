@@ -173,13 +173,17 @@ class GameView:
                 y + 60,
             )
 
-            # Làm tròn lên để đầu lượt hiện 30s; bên chờ giữ nguyên số đang có.
-            seconds = math.ceil(game.time_remaining[index])
-            state = "đang chạy" if index == game.current_turn and game.winner is None else "dừng"
-            self.draw_text(
-                f"Lượt: {seconds}s ({state})",
-                self.small_font, self.player_colors[index], info_x, y + 85,
-            )
+            # Chế độ bot không hiển thị đồng hồ của cả hai bên.
+            if game.timer_enabled:
+                seconds = math.ceil(game.time_remaining[index])
+                state = "đang chạy" if index == game.current_turn and game.winner is None else "dừng"
+                self.draw_text(
+                    f"Lượt: {seconds}s ({state})",
+                    self.small_font, self.player_colors[index], info_x, y + 85,
+                )
+
+        mode_label = "Đấu bot dễ" if game.mode == "bot" else "Hai người chơi"
+        self.draw_text(mode_label, self.small_font, self.text_color, info_x, 215)
 
         self.draw_text(game.notice, self.small_font, self.text_color, 70, 735)
         self.draw_text("Chuột vào khe: xem trước; click: đặt tường.",
@@ -205,8 +209,9 @@ class GameView:
         self.draw_wall_preview(wall_preview, game.current_turn)
 
         # Luôn hiện nước đi và viền quân bên đang tới lượt, không cần chọn quân.
-        legal_moves = game.get_legal_moves()
-        active_position = game.current_player.position if game.winner is None else None
+        legal_moves = [] if game.is_bot_turn else game.get_legal_moves()
+        active_position = (game.current_player.position
+                           if game.winner is None and not game.is_bot_turn else None)
         self.draw_move_hints(active_position, legal_moves, game.current_turn)
         self.draw_players(game)
         self.draw_info(game)
@@ -216,10 +221,10 @@ class GameView:
             validity = "hợp lệ" if is_valid else "không hợp lệ"
             self.draw_text(f"Tường {direction}: {validity}", self.small_font,
                            self.text_color, 700, 580)
-        elif game.winner is None:
+        elif game.winner is None and not game.is_bot_turn:
             self.draw_text("Đưa chuột vào khe ngang/dọc.", self.small_font,
                            self.text_color, 700, 580)
-        if game.winner is None:
+        if game.winner is None and not game.is_bot_turn:
             self.draw_text("Click ô được đánh dấu để đi.", self.small_font,
                            self.text_color, 700, 610)
 
