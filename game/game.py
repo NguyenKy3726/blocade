@@ -9,6 +9,13 @@ from game.pathfinder import PathFinder
 class Game:
     # Khởi tạo ván hai người trên bàn cờ 9×9.
     def __init__(self, time_source=monotonic):
+        # Tách đồng hồ khỏi Pygame để kiểm tra mà không cần chờ thật.
+        self.time_source = time_source
+        self.turn_duration = 30.0
+        self.reset()
+
+    # Bắt đầu lại ván: khôi phục quân, tường, lượt, kết quả và hai đồng hồ.
+    def reset(self):
         self.board = Board(size=9)
         self.players = [
             Player("Người chơi 1", 0, 4, 8),
@@ -17,9 +24,6 @@ class Game:
         self.current_turn = 0
         self.winner = None
         self.path_finder = PathFinder()
-        # Tách đồng hồ khỏi Pygame để kiểm tra thời gian mà không cần chờ thật.
-        self.time_source = time_source
-        self.turn_duration = 30.0
         self.time_remaining = [self.turn_duration, self.turn_duration]
         self.turn_started_at = self.time_source()
         self.wall_owners = {}

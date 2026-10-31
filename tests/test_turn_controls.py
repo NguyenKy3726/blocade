@@ -1,5 +1,8 @@
 import os
+from pathlib import Path
+import runpy
 import unittest
+from unittest.mock import patch
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -236,6 +239,94 @@ class MouseTests(unittest.TestCase):
             self.assertNotEqual(tuple(self.view.screen.get_at(center))[:3], (85, 145, 90))
         self.click(self.position(4 * 66 + 20, 66 + 20))
         self.assertEqual(self.game.players[0].position, (0, 4))
+
+    # Kiểm tra toàn bộ trạng thái ban đầu và cửa sổ được giữ sau khi chơi lại.
+    def assert_restarted(self):
+        self.assertIs(self.controller.game, self.game)
+        self.assertEqual([p.position for p in self.game.players], [(0, 4), (8, 4)])
+        self.assertEqual([p.walls_remaining for p in self.game.players], [10, 10])
+        self.assertEqual(self.game.board.walls, [])
+        self.assertEqual(self.game.board.blocked_edges, set())
+        self.assertEqual(self.game.wall_owners, {})
+        self.assertEqual(self.game.current_turn, 0)
+        self.assertIsNone(self.game.winner)
+        self.assertEqual(self.game.time_remaining, [30, 30])
+        self.assertEqual(self.game.turn_started_at, self.clock.now)
+        self.assertEqual(self.game.notice, "")
+        self.assertIsNone(self.controller.selected_position)
+        self.assertFalse(self.controller.placing_wall)
+        self.assertEqual(self.controller.wall_orientation, "horizontal")
+        self.assertIs(pygame.display.get_surface(), self.view.screen)
+        self.assert_visible_moves()
+
+    # Chơi lại giữa ván xóa tường, lựa chọn cũ và mốc giờ; ván mới vẫn chơi được.
+    def test_restart_during_game(self):
+        self.assertTrue(self.game.place_wall_current_player("horizontal", 2, 2))
+        self.assertTrue(self.game.move_current_player((7, 4)))
+        self.controller.placing_wall = True
+        self.controller.wall_orientation = "vertical"
+        self.controller.selected_position = (0, 4)
+        self.clock.now += 12
+        self.controller.update()
+        self.click(self.view.restart_button_rect.center)
+        self.assert_restarted()
+        self.clock.now += 3
+        self.controller.update()
+        self.assertEqual(self.game.time_remaining, [27, 30])
+        self.click(self.position(4 * 66 + 20, 66 + 20))
+        self.assertEqual(self.game.players[0].position, (1, 4))
+        self.assertEqual(self.game.current_turn, 1)
+
+    # Nút luôn được vẽ và nhận click sau thắng ván hoặc hết giờ; bấm nhiều lần an toàn.
+    def test_restart_after_win_or_timeout(self):
+        for finished in (False, True):
+            with self.subTest(finished=finished):
+                if finished:
+                    self.game.players[0].row = 7
+                    self.game.players[1].col = 0
+                    self.assertTrue(self.game.move_current_player((8, 4)))
+                self.clock.now += 30
+                self.view.draw(self.game)
+                rect = self.view.restart_button_rect
+                self.assertNotEqual(tuple(self.view.screen.get_at((rect.left + 10, rect.top + 10)))[:3],
+                                    self.view.background_color)
+                self.click(rect.center)
+                self.assert_restarted()
+                self.click(rect.center)
+                self.assert_restarted()
+
+    # Chỉ click trái bên trong nút mới chơi lại; ngoài nút hoặc chuột phải không reset.
+    def test_restart_button_hit_area(self):
+        self.assertTrue(self.game.move_current_player((1, 4)))
+        rect = self.view.restart_button_rect
+        self.controller.handle_event(pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN, button=3, pos=rect.center))
+        self.click((rect.right, rect.bottom))
+        self.assertEqual(self.game.players[0].position, (1, 4))
+        self.assertEqual(self.game.current_turn, 1)
+
+    # Chạy vòng lặp main thật: chơi lại tại hạn, vẽ ván mới và bỏ click còn từ ván cũ.
+    def test_main_restart_at_timeout_discards_old_clicks(self):
+        self.assertTrue(self.game.place_wall_current_player("horizontal", 2, 2))
+        self.clock.now += 30
+        restart = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
+                                     pos=self.view.restart_button_rect.center)
+        old_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
+                                       pos=self.position(20, 62))
+        quit_event = pygame.event.Event(pygame.QUIT)
+        main_path = Path(__file__).resolve().parents[1] / "main.py"
+        with patch("game.game.Game", return_value=self.game), \
+                patch("ui.game_view.GameView", return_value=self.view), \
+                patch("pygame.event.get", side_effect=[[restart, old_click], [quit_event]]), \
+                patch.object(self.view, "draw", wraps=self.view.draw) as draw:
+            result = runpy.run_path(str(main_path), run_name="__main__")
+        self.assertEqual(self.game.board.walls, [])
+        self.assertEqual(self.game.time_remaining, [30, 30])
+        self.assertEqual(self.game.current_turn, 0)
+        self.assertEqual(self.game.notice, "")
+        draw.assert_called_once()
+        self.assertIs(draw.call_args.args[0], self.game)
+        self.assertIs(result["controller"].game, self.game)
 
 
 if __name__ == "__main__":

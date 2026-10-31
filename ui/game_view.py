@@ -38,6 +38,7 @@ class GameView:
         self.wall_preview_colors = [(132, 204, 158), (133, 192, 235)]
         self.invalid_wall_color = (190, 65, 55)
         self.text_color = (70, 52, 38)
+        self.restart_button_rect = pygame.Rect(700, 650, 250, 52)
 
     # Vẽ chữ lên màn hình tại vị trí được chỉ định.
     def draw_text(self, text, font, color, x, y):
@@ -183,6 +184,16 @@ class GameView:
         self.draw_text("Chuột vào khe: xem trước; click: đặt tường.",
                        self.small_font, self.text_color, 70, 765)
 
+    # Vẽ nút Chơi lại ở cả lúc đang chơi và sau khi ván kết thúc.
+    def draw_restart_button(self):
+        hovered = self.restart_button_rect.collidepoint(pygame.mouse.get_pos())
+        color = (222, 198, 155) if hovered else (234, 220, 191)
+        pygame.draw.rect(self.screen, color, self.restart_button_rect, border_radius=8)
+        pygame.draw.rect(self.screen, self.text_color, self.restart_button_rect,
+                         width=2, border_radius=8)
+        label = self.font.render("Chơi lại", True, self.text_color)
+        self.screen.blit(label, label.get_rect(center=self.restart_button_rect.center))
+
     # Vẽ toàn bộ giao diện theo trạng thái ván chơi hiện tại.
     def draw(self, game, selected_position=None, wall_preview=None):
         self.screen.fill(self.background_color)
@@ -210,6 +221,7 @@ class GameView:
             self.draw_text("H/V: khóa hướng; Esc: tự chọn.", self.small_font,
                            self.text_color, 700, 610)
 
+        self.draw_restart_button()
         pygame.display.flip()
 
     # Chọn khe ngang/dọc gần chuột nhất; giao điểm bằng nhau không tự chọn hướng.

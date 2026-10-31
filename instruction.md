@@ -194,7 +194,7 @@ Gợi ý: bắt đầu với đồng hồ hiển thị riêng cho mỗi người
    - Phím H/V, nếu giữ lại, chỉ là cách thao tác nhanh tùy chọn.
 2. Chốt quy tắc đồng hồ với người chơi, sau đó thêm timer và hiển thị rõ lượt/thời gian còn lại.
 3. Rà chế độ hai người bằng các trường hợp: đi thường; nhảy thẳng; nhảy chéo khi sát mép hoặc bị tường chặn; đặt tường ngang/dọc; tường chồng/cắt; tường bị từ chối vì khóa đường; số tường, chuyển lượt và thắng ván.
-4. Hoàn thiện trải nghiệm hai người: thông báo lý do nước đi/tường bị từ chối, nút chơi lại, nút về menu và trạng thái kết thúc rõ ràng.
+4. Hoàn thiện trải nghiệm hai người: nút chơi lại, nút về menu và trạng thái kết thúc rõ ràng. Theo lựa chọn mới của người chơi, không bổ sung thông báo lý do nước đi/tường bị từ chối.
 5. Khi hành động đã ổn định, thêm Command cho MoveCommand và PlaceWallCommand để tách việc yêu cầu hành động khỏi việc tự sửa trạng thái trong GameController.
 6. Thêm menu chọn hai người hoặc đấu bot; dùng State để quản lý menu, lượt người, lượt bot và kết thúc nếu cấu trúc thực tế cần đến.
 7. Thêm bot theo thứ tự dễ, trung bình, khó. Mọi bot phải dùng chung hàm lấy nước đi hợp lệ với người chơi. Dùng Strategy để thay đổi cách chọn hành động; dùng Factory để tạo cấp bot được chọn.
@@ -207,7 +207,7 @@ Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ t�
 - Mỗi người có đồng hồ riêng, đếm ngược 30 giây cho mỗi lượt. Chỉ bên đang tới lượt chạy đồng hồ; bên chờ giữ nguyên số hiển thị tới lượt tiếp theo.
 - Đi quân hoặc đặt tường hợp lệ kết thúc lượt. Khi nhận lượt mới, đồng hồ của người đó được đặt lại thành 30 giây.
 - Hết giờ thì mất lượt, không bị xử thua và không bị trừ tường. Nước đi hoặc tường không hợp lệ không đặt lại đồng hồ.
-- Khi có người thắng, cả hai đồng hồ dừng. Tạo Game mới khởi tạo lại cả hai đồng hồ; nút chơi lại và menu chưa được triển khai.
+- Khi có người thắng, cả hai đồng hồ dừng. Nút Chơi lại ở bên phải bàn dùng được cả trong ván và sau khi thắng: đưa quân về vị trí đầu, xóa tường và màu sở hữu, cấp lại 10 tường và 30 giây mỗi phe, xanh lá đi trước, bỏ khóa H/V và thông báo hết giờ. Menu chưa được triển khai.
 - Đưa chuột vào khe ngang/dọc để xem trước; click trái để xác nhận đặt tường. Tại giao điểm, hướng theo đường giữa khe gần chuột hơn; nếu bằng nhau thì chưa chọn hướng, hãy dịch chuột vào khe muốn đặt.
 - H/V là phím tắt khóa hướng tùy chọn; Esc bỏ khóa và trở lại chọn hướng bằng chuột.
 - Hai phe dùng màu xanh lá (người chơi 1) và xanh nước (người chơi 2), áp dụng cho quân và tường đã đặt.

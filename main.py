@@ -17,10 +17,12 @@ while running:
     # Cập nhật giờ trước thao tác; bỏ click cũ trong khung hình vừa hết giờ.
     expired = controller.update()
     for event in pygame.event.get():
-        if expired and event.type != pygame.QUIT:
+        restarting = controller.is_restart_event(event)
+        if expired and event.type != pygame.QUIT and not restarting:
             continue
         running = controller.handle_event(event)
-        if not running:
+        # Bỏ phần sự kiện còn lại của ván cũ sau khi bấm Chơi lại.
+        if not running or restarting:
             break
 
     if not running:
@@ -29,7 +31,7 @@ while running:
     # Cập nhật hình xem trước theo vị trí chuột hiện tại.
     wall_preview = controller.get_wall_preview(pygame.mouse.get_pos())
 
-    # Vẽ lại giao diện với quân được chọn và tường xem trước.
+    # Vẽ trạng thái ván hiện tại, gợi ý nước đi và tường xem trước.
     view.draw(
         game,
         controller.selected_position,

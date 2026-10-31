@@ -11,6 +11,21 @@ class GameController:
         self.wall_orientation = "horizontal"
         self.placing_wall = False
 
+    # Nhận diện click trái trong nút Chơi lại, tách khỏi thao tác bàn cờ.
+    def is_restart_event(self, event):
+        return (
+            event.type == pygame.MOUSEBUTTONDOWN
+            and event.button == 1
+            and self.view.restart_button_rect.collidepoint(event.pos)
+        )
+
+    # Chơi lại trên cùng cửa sổ và bỏ trạng thái thao tác của ván cũ.
+    def restart_game(self):
+        self.game.reset()
+        self.selected_position = None
+        self.wall_orientation = "horizontal"
+        self.placing_wall = False
+
     # Cập nhật đồng hồ và bỏ lựa chọn cũ khi người chơi bị mất lượt.
     def update(self):
         expired = self.game.update_time()
@@ -23,6 +38,11 @@ class GameController:
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             return False
+
+        # Nút vẫn dùng được sau thắng ván hoặc tại đúng mốc hết giờ.
+        if self.is_restart_event(event):
+            self.restart_game()
+            return True
 
         if self.update():
             return True
