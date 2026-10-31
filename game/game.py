@@ -1,3 +1,5 @@
+from time import monotonic
+
 from game.board import Board
 from game.player import Player
 from game.pathfinder import PathFinder
@@ -6,7 +8,7 @@ from game.pathfinder import PathFinder
 # Quản lý bàn cờ, người chơi, lượt chơi và kết quả ván.
 class Game:
     # Khởi tạo ván hai người trên bàn cờ 9×9.
-    def __init__(self):
+    def __init__(self, time_source=monotonic):
         self.board = Board(size=9)
         self.players = [
             Player("Người chơi 1", 0, 4, 8),
@@ -15,6 +17,34 @@ class Game:
         self.current_turn = 0
         self.winner = None
         self.path_finder = PathFinder()
+        # Tách đồng hồ khỏi Pygame để kiểm tra thời gian mà không cần chờ thật.
+        self.time_source = time_source
+        self.turn_duration = 30.0
+        self.time_remaining = [self.turn_duration, self.turn_duration]
+        self.turn_started_at = self.time_source()
+        self.wall_owners = {}
+        self.notice = ""
+
+    # Cập nhật riêng đồng hồ bên đang đi; hết giờ thì mất lượt, không xử thua.
+    def update_time(self):
+        if self.winner is not None:
+            return False
+
+        now = self.time_source()
+        elapsed = max(0.0, now - self.turn_started_at)
+        self.time_remaining[self.current_turn] = max(0.0, self.turn_duration - elapsed)
+        if self.time_remaining[self.current_turn] > 0:
+            return False
+
+        self.notice = f"{self.current_player.name} hết giờ, mất lượt."
+        self._next_turn(now)
+        return True
+
+    # Chuyển sang người còn lại và cấp đủ 30 giây cho lượt mới.
+    def _next_turn(self, now=None):
+        self.current_turn = 1 - self.current_turn
+        self.time_remaining[self.current_turn] = self.turn_duration
+        self.turn_started_at = self.time_source() if now is None else now
 
     # Trả về người chơi đang đến lượt.
     @property
@@ -96,16 +126,20 @@ class Game:
 
     # Thực hiện nước đi hợp lệ; sau đó đổi lượt hoặc ghi nhận người thắng.
     def move_current_player(self, destination):
+        # Không cho một click đến muộn trở thành nước đi của người tiếp theo.
+        if self.update_time():
+            return False
         if destination not in self.get_legal_moves():
             return False
 
+        self.notice = ""
         player = self.current_player
         player.row, player.col = destination
 
         if self.has_won(player):
             self.winner = player
         else:
-            self.current_turn = 1 - self.current_turn
+            self._next_turn()
 
         return True
 
@@ -134,12 +168,16 @@ class Game:
 
     # Đặt tường hợp lệ, trừ một tường của người chơi và chuyển lượt.
     def place_wall_current_player(self, orientation, row, col):
+        if self.update_time():
+            return False
         if not self.can_place_wall_current_player(orientation, row, col):
             return False
 
         if not self.board.place_wall(orientation, row, col):
             return False
 
+        self.wall_owners[(orientation, row, col)] = self.current_turn
         self.current_player.walls_remaining -= 1
-        self.current_turn = 1 - self.current_turn
+        self.notice = ""
+        self._next_turn()
         return True

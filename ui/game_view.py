@@ -1,3 +1,5 @@
+import math
+
 import pygame
 
 
@@ -142,7 +144,7 @@ class GameView:
         self.draw_text(status, self.font, self.text_color, info_x, 180)
 
         for index, player in enumerate(game.players):
-            y = 250 + index * 105
+            y = 250 + index * 145
             self.draw_text(
                 player.name,
                 self.font,
@@ -165,6 +167,18 @@ class GameView:
                 y + 60,
             )
 
+            # Làm tròn lên để đầu lượt hiện 30s; bên chờ giữ nguyên số đang có.
+            seconds = math.ceil(game.time_remaining[index])
+            state = "đang chạy" if index == game.current_turn and game.winner is None else "dừng"
+            self.draw_text(
+                f"Lượt: {seconds}s ({state})",
+                self.small_font, self.player_colors[index], info_x, y + 85,
+            )
+
+        self.draw_text(game.notice, self.small_font, self.text_color, 70, 735)
+        self.draw_text("Chuột vào khe: xem trước; click: đặt tường.",
+                       self.small_font, self.text_color, 70, 765)
+
     # Vẽ toàn bộ giao diện theo trạng thái ván chơi hiện tại.
     def draw(self, game, selected_position=None, wall_preview=None):
         self.screen.fill(self.background_color)
@@ -180,8 +194,37 @@ class GameView:
         self.draw_move_hints(selected_position, legal_moves)
         self.draw_players(game)
         self.draw_info(game)
+        if wall_preview is not None:
+            orientation, _, _, is_valid = wall_preview
+            direction = "ngang" if orientation == "horizontal" else "dọc"
+            validity = "hợp lệ" if is_valid else "không hợp lệ"
+            self.draw_text(f"Tường {direction}: {validity}", self.small_font,
+                           self.text_color, 700, 580)
+        elif game.winner is None:
+            self.draw_text("Đưa chuột vào khe ngang/dọc.", self.small_font,
+                           self.text_color, 700, 580)
+        if game.winner is None:
+            self.draw_text("H/V: khóa hướng; Esc: tự chọn.", self.small_font,
+                           self.text_color, 700, 610)
 
         pygame.display.flip()
+
+    # Chọn khe ngang/dọc gần chuột nhất; giao điểm bằng nhau không tự chọn hướng.
+    def wall_at_position(self, mouse_position):
+        candidates = []
+        for orientation in ("horizontal", "vertical"):
+            anchor = self.wall_anchor_at_position(mouse_position, orientation)
+            if anchor is not None:
+                rect = self._wall_rect(orientation, *anchor)
+                distance = (abs(mouse_position[1] - rect.centery) if orientation == "horizontal"
+                            else abs(mouse_position[0] - rect.centerx))
+                candidates.append((distance, orientation, *anchor))
+        if not candidates:
+            return None
+        candidates.sort()
+        if len(candidates) == 2 and candidates[0][0] == candidates[1][0]:
+            return None
+        return candidates[0][1:]
 
     # Đổi vị trí chuột thành điểm neo của tường.
     # Người chơi phải đưa chuột vào khe đúng hướng.
@@ -198,16 +241,20 @@ class GameView:
         x_in_stride = relative_x % self.cell_stride
         y_in_stride = relative_y % self.cell_stride
 
-        if orientation == "horizontal":
-            if y_in_stride < self.cell_size:
-                return None
-        elif orientation == "vertical":
-            if x_in_stride < self.cell_size:
-                return None
-        else:
+        board_extent = 9 * self.cell_size + 8 * self.cell_gap
+        if relative_x >= board_extent or relative_y >= board_extent:
             return None
 
-        if row >= 8 or col >= 8:
+        if orientation == "horizontal":
+            if y_in_stride < self.cell_size or row >= 8:
+                return None
+            # Khe dưới ô cuối vẫn thuộc tường neo ở cột 7.
+            col = min(col, 7)
+        elif orientation == "vertical":
+            if x_in_stride < self.cell_size or col >= 8:
+                return None
+            row = min(row, 7)
+        else:
             return None
 
         return row, col
@@ -229,9 +276,9 @@ class GameView:
 
     # Vẽ những bức tường đã được đặt trên bàn cờ.
     def draw_walls(self, game):
-        wall_color = (112, 62, 39)
-
         for orientation, row, col in game.board.walls:
+            owner = game.wall_owners.get((orientation, row, col))
+            wall_color = self.player_colors[owner] if owner is not None else (112, 62, 39)
             wall_rect = self._wall_rect(orientation, row, col)
             pygame.draw.rect(
                 self.screen,

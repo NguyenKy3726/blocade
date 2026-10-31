@@ -14,8 +14,17 @@ running = True
 
 # Vòng lặp chính chuyển từng sự kiện cho GameController xử lý.
 while running:
+    # Cập nhật giờ trước thao tác; bỏ click cũ trong khung hình vừa hết giờ.
+    expired = controller.update()
     for event in pygame.event.get():
+        if expired and event.type != pygame.QUIT:
+            continue
         running = controller.handle_event(event)
+        if not running:
+            break
+
+    if not running:
+        break
 
     # Cập nhật hình xem trước theo vị trí chuột hiện tại.
     wall_preview = controller.get_wall_preview(pygame.mouse.get_pos())

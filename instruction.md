@@ -201,3 +201,15 @@ Gợi ý: bắt đầu với đồng hồ hiển thị riêng cho mỗi người
 8. Hoàn thiện báo cáo, sơ đồ lớp và giải thích OOP/pattern.
 
 Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ tự triển khai cũ ở mục 11 khi hai mục khác nhau. Luật nhảy thẳng/chéo và kiểm tra BFS là yêu cầu cốt lõi, không được bỏ hoặc trì hoãn.
+
+12.4. Quy tắc đã chốt và thao tác sau cập nhật
+
+- Mỗi người có đồng hồ riêng, đếm ngược 30 giây cho mỗi lượt. Chỉ bên đang tới lượt chạy đồng hồ; bên chờ giữ nguyên số hiển thị tới lượt tiếp theo.
+- Đi quân hoặc đặt tường hợp lệ kết thúc lượt. Khi nhận lượt mới, đồng hồ của người đó được đặt lại thành 30 giây.
+- Hết giờ thì mất lượt, không bị xử thua và không bị trừ tường. Nước đi hoặc tường không hợp lệ không đặt lại đồng hồ.
+- Khi có người thắng, cả hai đồng hồ dừng. Tạo Game mới khởi tạo lại cả hai đồng hồ; nút chơi lại và menu chưa được triển khai.
+- Đưa chuột vào khe ngang/dọc để xem trước; click trái để xác nhận đặt tường. Tại giao điểm, hướng theo đường giữa khe gần chuột hơn; nếu bằng nhau thì chưa chọn hướng, hãy dịch chuột vào khe muốn đặt.
+- H/V là phím tắt khóa hướng tùy chọn; Esc bỏ khóa và trở lại chọn hướng bằng chuột.
+- Hình xem trước dùng xanh lá cho hợp lệ, đỏ cho không hợp lệ, kèm chữ ghi hướng và tính hợp lệ. Tường đã đặt dùng màu phe: người chơi 1 đỏ, người chơi 2 xanh dương.
+- Bộ kiểm tra mới: chạy `python -m unittest discover -s tests -v` từ thư mục repo trên Windows có Pygame và font Arial. Các kiểm tra dùng SDL headless và đồng hồ giả, không thay thế việc kiểm tra GUI bằng tay.
+- Trên Codex/Linux, đường dẫn font Windows vẫn được hỗ trợ bởi cấu hình cục bộ đã thiết lập: chạy từ `/workspace/blocade-runtime`, dùng Python `/workspace/blocade-env/bin/python`, đặt `PYTHONPATH=/workspace/blocade` và truyền `-m unittest discover -s /workspace/blocade/tests -v`. Font đa nền tảng trong mã nguồn vẫn là việc riêng cần xử lý sau.
