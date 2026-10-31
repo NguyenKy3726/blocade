@@ -13,6 +13,7 @@ from game.game import Game
 from game.commands import MoveCommand, PlaceWallCommand
 from ui.controller import GameController
 from ui.game_view import GameView
+from ui.menu_view import MenuView
 
 
 # Cung cấp thời gian giả để kiểm tra mốc 30 giây ngay lập tức.
@@ -300,10 +301,12 @@ class MouseTests(unittest.TestCase):
         self.assertEqual(self.game.players[0].position, (1, 4))
         self.assertEqual(self.game.current_turn, 1)
 
-    # Chạy vòng lặp main thật: chơi lại tại hạn, vẽ ván mới và bỏ click còn từ ván cũ.
-    def test_main_restart_at_timeout_discards_old_clicks(self):
+    # Chạy main thật: vào từ menu, chơi lại và bỏ click còn từ ván cũ.
+    def test_main_menu_start_restart_discards_old_clicks(self):
         self.assertTrue(self.game.place_wall_current_player("horizontal", 2, 2))
         self.clock.now += 30
+        start = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
+                                   pos=MenuView(self.view).start_button_rect.center)
         restart = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                      pos=self.view.restart_button_rect.center)
         old_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
@@ -312,14 +315,14 @@ class MouseTests(unittest.TestCase):
         main_path = Path(__file__).resolve().parents[1] / "main.py"
         with patch("game.game.Game", return_value=self.game), \
                 patch("ui.game_view.GameView", return_value=self.view), \
-                patch("pygame.event.get", side_effect=[[restart, old_click], [quit_event]]), \
+                patch("pygame.event.get", side_effect=[[start], [restart, old_click], [quit_event]]), \
                 patch.object(self.view, "draw", wraps=self.view.draw) as draw:
             result = runpy.run_path(str(main_path), run_name="__main__")
         self.assertEqual(self.game.board.walls, [])
         self.assertEqual(self.game.time_remaining, [30, 30])
         self.assertEqual(self.game.current_turn, 0)
         self.assertEqual(self.game.notice, "")
-        draw.assert_called_once()
+        self.assertEqual(draw.call_count, 2)
         self.assertIs(draw.call_args.args[0], self.game)
         self.assertIs(result["controller"].game, self.game)
 
