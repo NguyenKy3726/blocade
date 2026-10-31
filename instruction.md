@@ -160,3 +160,44 @@ Khi nhờ Claude, cung cấp cấu trúc dữ liệu và luật cụ thể, yêu
 8. Làm menu và giao diện Pygame.
 9. Hoàn thiện báo cáo, sơ đồ lớp và giải thích pattern.
 Thứ tự này giúp bạn kiểm chứng luật nhảy qua quân trong chế độ hai người trước, rồi mới dùng đúng luật đó cho bot.
+
+12. Ghi chú bổ sung và lộ trình triển khai cập nhật
+
+12.1. Điều khiển đặt tường
+
+Trạng thái hiện tại: người chơi phải nhấn H để vào chế độ đặt tường ngang hoặc V để vào chế độ đặt tường dọc. Sau khi đặt thành công, chế độ đặt tường tắt nên phải nhấn phím lại cho lần đặt tiếp theo.
+
+Yêu cầu mới của người chơi:
+- Không bắt buộc nhấn H/V để đặt tường.
+- Trong cùng một chế độ chơi, người chơi có thể chọn đặt tường ngang hoặc dọc mà không cần chuyển chế độ bằng bàn phím.
+- Hướng tường cần được chọn bằng thao tác chuột rõ ràng, có hình xem trước trước khi xác nhận.
+- Nếu thuận tiện cho người dùng, có thể giữ H/V như phím tắt tùy chọn; chúng không được là cách duy nhất để đặt tường.
+- Hình xem trước phải phân biệt vị trí hợp lệ và không hợp lệ. Tường chỉ được đặt sau khi người chơi xác nhận bằng chuột.
+- Thiết kế cách chọn hướng phải rõ ràng cả tại vị trí có thể đặt tường ngang lẫn dọc; tránh trường hợp người chơi không biết hướng nào đang được chọn.
+
+12.2. Bộ đếm thời gian
+
+Yêu cầu mới: bổ sung bộ đếm thời gian cho chế độ chơi. Trước khi lập trình, cần chốt:
+- Dùng đồng hồ đếm ngược cho mỗi lượt, hay đồng hồ ghi tổng thời gian của từng người chơi.
+- Thời lượng ban đầu và hành vi khi hết giờ.
+- Đồng hồ chỉ chạy cho người đang đến lượt hay chạy liên tục.
+- Cách xử lý khi chơi lại, về menu và khi ván đã kết thúc.
+
+Gợi ý: bắt đầu với đồng hồ hiển thị riêng cho mỗi người chơi và chỉ tính thời gian trong lượt của người đó. Chỉ dùng gợi ý này nếu người chơi đồng ý với quy tắc đó trước khi triển khai.
+
+12.3. Lộ trình cập nhật theo ưu tiên
+
+1. Hoàn thiện thao tác đặt tường không phụ thuộc H/V:
+   - Chọn được cả tường ngang và dọc bằng chuột trong cùng chế độ.
+   - Hiển thị hướng/vị trí xem trước, phân biệt hợp lệ/không hợp lệ.
+   - Click xác nhận đặt một tường và chuyển lượt đúng một lần.
+   - Phím H/V, nếu giữ lại, chỉ là cách thao tác nhanh tùy chọn.
+2. Chốt quy tắc đồng hồ với người chơi, sau đó thêm timer và hiển thị rõ lượt/thời gian còn lại.
+3. Rà chế độ hai người bằng các trường hợp: đi thường; nhảy thẳng; nhảy chéo khi sát mép hoặc bị tường chặn; đặt tường ngang/dọc; tường chồng/cắt; tường bị từ chối vì khóa đường; số tường, chuyển lượt và thắng ván.
+4. Hoàn thiện trải nghiệm hai người: thông báo lý do nước đi/tường bị từ chối, nút chơi lại, nút về menu và trạng thái kết thúc rõ ràng.
+5. Khi hành động đã ổn định, thêm Command cho MoveCommand và PlaceWallCommand để tách việc yêu cầu hành động khỏi việc tự sửa trạng thái trong GameController.
+6. Thêm menu chọn hai người hoặc đấu bot; dùng State để quản lý menu, lượt người, lượt bot và kết thúc nếu cấu trúc thực tế cần đến.
+7. Thêm bot theo thứ tự dễ, trung bình, khó. Mọi bot phải dùng chung hàm lấy nước đi hợp lệ với người chơi. Dùng Strategy để thay đổi cách chọn hành động; dùng Factory để tạo cấp bot được chọn.
+8. Hoàn thiện báo cáo, sơ đồ lớp và giải thích OOP/pattern.
+
+Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ tự triển khai cũ ở mục 11 khi hai mục khác nhau. Luật nhảy thẳng/chéo và kiểm tra BFS là yêu cầu cốt lõi, không được bỏ hoặc trì hoãn.
