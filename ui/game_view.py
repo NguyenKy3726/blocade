@@ -40,6 +40,7 @@ class GameView:
         self.text_color = (70, 52, 38)
         self.restart_button_rect = pygame.Rect(700, 650, 250, 52)
         self.menu_button_rect = pygame.Rect(700, 720, 250, 52)
+        self.undo_button_rect = pygame.Rect(700, 600, 250, 40)
 
     # Vẽ chữ lên màn hình tại vị trí được chỉ định.
     def draw_text(self, text, font, color, x, y):
@@ -200,6 +201,17 @@ class GameView:
             label = self.font.render(text, True, self.text_color)
             self.screen.blit(label, label.get_rect(center=rect.center))
 
+    # Chỉ hiện Undo khi đấu bot; làm mờ nút nếu chưa có hành động để lùi.
+    def draw_undo_button(self, enabled):
+        rect = self.undo_button_rect
+        hovered = enabled and rect.collidepoint(pygame.mouse.get_pos())
+        color = (222, 198, 155) if hovered else (234, 220, 191)
+        text_color = self.text_color if enabled else (153, 145, 130)
+        pygame.draw.rect(self.screen, color, rect, border_radius=8)
+        pygame.draw.rect(self.screen, text_color, rect, width=2, border_radius=8)
+        label = self.font.render("Undo", True, text_color)
+        self.screen.blit(label, label.get_rect(center=rect.center))
+
     # Vẽ toàn bộ giao diện theo trạng thái ván chơi hiện tại.
     def draw(self, game, selected_position=None, wall_preview=None):
         self.screen.fill(self.background_color)
@@ -215,19 +227,23 @@ class GameView:
         self.draw_move_hints(active_position, legal_moves, game.current_turn)
         self.draw_players(game)
         self.draw_info(game)
+        preview_y = 530 if game.mode == "bot" else 580
+        instruction_y = 560 if game.mode == "bot" else 610
         if wall_preview is not None:
             orientation, _, _, is_valid = wall_preview
             direction = "ngang" if orientation == "horizontal" else "dọc"
             validity = "hợp lệ" if is_valid else "không hợp lệ"
             self.draw_text(f"Tường {direction}: {validity}", self.small_font,
-                           self.text_color, 700, 580)
+                           self.text_color, 700, preview_y)
         elif game.winner is None and not game.is_bot_turn:
             self.draw_text("Đưa chuột vào khe ngang/dọc.", self.small_font,
-                           self.text_color, 700, 580)
+                           self.text_color, 700, preview_y)
         if game.winner is None and not game.is_bot_turn:
             self.draw_text("Click ô được đánh dấu để đi.", self.small_font,
-                           self.text_color, 700, 610)
+                           self.text_color, 700, instruction_y)
 
+        if game.mode == "bot":
+            self.draw_undo_button(game.can_undo)
         self.draw_navigation_buttons()
         pygame.display.flip()
 

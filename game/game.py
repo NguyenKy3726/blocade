@@ -33,6 +33,51 @@ class Game:
         self.turn_started_at = self.time_source() if self.timer_enabled else None
         self.wall_owners = {}
         self.notice = ""
+        self.command_history = []
+
+    # Chụp dữ liệu có thể đổi trong hành động; tạo bản sao để lịch sử không bị ghi đè.
+    def capture_state(self):
+        return {
+            "players": [(p.row, p.col, p.walls_remaining) for p in self.players],
+            "walls": list(self.board.walls),
+            "blocked_edges": set(self.board.blocked_edges),
+            "wall_owners": dict(self.wall_owners),
+            "current_turn": self.current_turn,
+            "winner": self.players.index(self.winner) if self.winner is not None else None,
+            "time_remaining": list(self.time_remaining),
+            "turn_started_at": self.turn_started_at,
+            "notice": self.notice,
+        }
+
+    # Khôi phục trạng thái của một Command, giữ nguyên các đối tượng Game/Board.
+    def restore_state(self, state):
+        for player, data in zip(self.players, state["players"]):
+            player.row, player.col, player.walls_remaining = data
+        self.board.walls = list(state["walls"])
+        self.board.blocked_edges = set(state["blocked_edges"])
+        self.wall_owners = dict(state["wall_owners"])
+        self.current_turn = state["current_turn"]
+        self.winner = self.players[state["winner"]] if state["winner"] is not None else None
+        self.time_remaining = list(state["time_remaining"])
+        self.turn_started_at = state["turn_started_at"]
+        self.notice = state["notice"]
+
+    # Chỉ đấu bot mới Undo; phải có hành động của người để trở về lúc người chọn nước.
+    @property
+    def can_undo(self):
+        return self.mode == "bot" and any(c.player_index == 0 for c in self.command_history)
+
+    # Hoàn tác từ lệnh mới nhất về tới hành động gần nhất của người chơi.
+    def undo_round(self):
+        if not self.can_undo:
+            return False
+        while self.command_history:
+            command = self.command_history[-1]
+            if not command.undo():
+                return False
+            if command.player_index == 0:
+                return True
+        return False
 
     # Chỉ chế độ hai người mới dùng đồng hồ và mất lượt do hết giờ.
     @property

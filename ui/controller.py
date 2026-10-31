@@ -21,6 +21,15 @@ class GameController:
             and self.view.restart_button_rect.collidepoint(event.pos)
         )
 
+    # Undo nhận trước khi chặn click lượt bot hoặc ván kết thúc.
+    def is_undo_event(self, event):
+        return (
+            self.game.mode == "bot"
+            and event.type == pygame.MOUSEBUTTONDOWN
+            and event.button == 1
+            and self.view.undo_button_rect.collidepoint(event.pos)
+        )
+
     # Chơi lại trên cùng cửa sổ và bỏ trạng thái thao tác của ván cũ.
     def restart_game(self, mode=None):
         self.game.reset(mode=mode)
@@ -48,6 +57,11 @@ class GameController:
         # Nút vẫn dùng được sau thắng ván hoặc tại đúng mốc hết giờ.
         if self.is_restart_event(event):
             self.restart_game()
+            return True
+
+        if self.is_undo_event(event):
+            self.game.undo_round()
+            self.selected_position = None
             return True
 
         if self.update() or self.game.is_bot_turn:
