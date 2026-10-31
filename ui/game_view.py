@@ -32,7 +32,10 @@ class GameView:
         self.background_color = (247, 241, 228)
         self.board_frame_color = (198, 155, 98)
         self.cell_colors = [(234, 220, 191), (218, 197, 160)]
-        self.player_colors = [(178, 68, 58), (55, 100, 154)]
+        # Phe 1 xanh lá, phe 2 xanh nước; xem trước hợp lệ dùng màu nhạt hơn.
+        self.player_colors = [(46, 139, 87), (40, 120, 190)]
+        self.wall_preview_colors = [(132, 204, 158), (133, 192, 235)]
+        self.invalid_wall_color = (190, 65, 55)
         self.text_color = (70, 52, 38)
 
     # Vẽ chữ lên màn hình tại vị trí được chỉ định.
@@ -89,7 +92,7 @@ class GameView:
                     border_radius=6,
                 )
 
-    # Tô viền quân đang được chọn và đánh dấu các ô có thể đi.
+    # Tô viền quân đang tới lượt và đánh dấu các ô có thể đi.
     def draw_move_hints(self, selected_position, legal_moves):
         if selected_position is not None:
             row, col = selected_position
@@ -185,13 +188,12 @@ class GameView:
 
         self.draw_board()
         self.draw_walls(game)
-        self.draw_wall_preview(wall_preview)
+        self.draw_wall_preview(wall_preview, game.current_turn)
 
-        legal_moves = []
-        if selected_position == game.current_player.position:
-            legal_moves = game.get_legal_moves()
-
-        self.draw_move_hints(selected_position, legal_moves)
+        # Luôn hiện nước đi và viền quân bên đang tới lượt, không cần chọn quân.
+        legal_moves = game.get_legal_moves()
+        active_position = game.current_player.position if game.winner is None else None
+        self.draw_move_hints(active_position, legal_moves)
         self.draw_players(game)
         self.draw_info(game)
         if wall_preview is not None:
@@ -287,8 +289,8 @@ class GameView:
                 border_radius=3,
             )
 
-    # Vẽ tường xem trước; xanh nghĩa là hợp lệ, đỏ nghĩa là bị từ chối.
-    def draw_wall_preview(self, wall_preview):
+    # Tường hợp lệ dùng màu phe nhạt hơn; tường không hợp lệ luôn màu đỏ.
+    def draw_wall_preview(self, wall_preview, player_index=0):
         if wall_preview is None:
             return
 
@@ -296,9 +298,9 @@ class GameView:
         wall_rect = self._wall_rect(orientation, row, col)
 
         if is_valid:
-            color = (75, 150, 85)
+            color = self.wall_preview_colors[player_index]
         else:
-            color = (190, 65, 55)
+            color = self.invalid_wall_color
 
         pygame.draw.rect(
             self.screen,

@@ -184,6 +184,58 @@ class MouseTests(unittest.TestCase):
         self.assertEqual(self.game.board.walls, [])
         self.assertEqual(self.game.current_turn, 1)
 
+    # Màu xem trước hợp lệ theo phe đang đi, nhạt hơn tường thật; sai luôn đỏ.
+    def test_team_preview_colors(self):
+        wall = ("horizontal", 2, 2)
+        center = self.view._wall_rect(*wall).center
+        for turn in (0, 1):
+            self.game.current_turn = turn
+            self.view.draw(self.game, wall_preview=(*wall, True))
+            pixel = tuple(self.view.screen.get_at(center))[:3]
+            self.assertEqual(pixel, self.view.wall_preview_colors[turn])
+            self.assertTrue(all(light > base for light, base in
+                                zip(pixel, self.view.player_colors[turn])))
+            self.view.draw(self.game, wall_preview=(*wall, False))
+            self.assertEqual(tuple(self.view.screen.get_at(center))[:3], (190, 65, 55))
+
+    # Kiểm tra các chấm gợi ý thật sự được vẽ mà không có quân được chọn.
+    def assert_visible_moves(self):
+        self.assertIsNone(self.controller.selected_position)
+        self.view.draw(self.game)
+        for row, col in self.game.get_legal_moves():
+            center = self.position(col * 66 + 29, row * 66 + 29)
+            self.assertEqual(tuple(self.view.screen.get_at(center))[:3], (85, 145, 90))
+
+    # Click một lần để đi; gợi ý cập nhật sau nước đi, tường và mất lượt.
+    def test_direct_move_and_automatic_hints(self):
+        self.assert_visible_moves()
+        self.click(self.position(4 * 66 + 20, 66 + 20))
+        self.assertEqual(self.game.players[0].position, (1, 4))
+        self.assertEqual(self.game.current_turn, 1)
+        self.assert_visible_moves()
+        self.click(self.position(20, 62))
+        self.assertEqual(self.game.current_turn, 0)
+        self.assert_visible_moves()
+        self.clock.now += 30
+        self.controller.update()
+        self.assertEqual(self.game.current_turn, 1)
+        self.assert_visible_moves()
+
+    # Click ngoài bàn hoặc vào ô sai không di chuyển; kết thúc ván bỏ gợi ý.
+    def test_invalid_click_and_finished_game(self):
+        for position in [(-20, -20), (20, 4 * 66 + 20)]:
+            self.click(self.position(*position))
+        self.assertEqual(self.game.current_turn, 0)
+        self.assertEqual(self.game.players[0].position, (0, 4))
+        old_moves = self.game.get_legal_moves()
+        self.game.winner = self.game.players[0]
+        self.view.draw(self.game)
+        for row, col in old_moves:
+            center = self.position(col * 66 + 29, row * 66 + 29)
+            self.assertNotEqual(tuple(self.view.screen.get_at(center))[:3], (85, 145, 90))
+        self.click(self.position(4 * 66 + 20, 66 + 20))
+        self.assertEqual(self.game.players[0].position, (0, 4))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -45,25 +45,20 @@ class GameController:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self._wall_at_position(event.pos) is not None:
                 self._handle_wall_click(event.pos)
-            elif not self.placing_wall:
+            else:
                 self._handle_move_click(event.pos)
 
         return True
 
-    # Chọn quân hiện tại hoặc di chuyển tới một ô đang được đánh dấu hợp lệ.
+    # Click thẳng vào ô hợp lệ để đi, không cần click chọn quân trước.
     def _handle_move_click(self, mouse_position):
         if self.game.winner is not None:
             return
 
         clicked_cell = self.view.cell_at_position(mouse_position)
-
-        if self.selected_position is None:
-            if clicked_cell == self.game.current_player.position:
-                self.selected_position = clicked_cell
-            return
-
         if clicked_cell in self.game.get_legal_moves():
-            self.game.move_current_player(clicked_cell)
+            if self.game.move_current_player(clicked_cell):
+                self.placing_wall = False
 
         self.selected_position = None
 
