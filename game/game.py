@@ -1,9 +1,10 @@
 from game.board import Board
 from game.player import Player
+from game.pathfinder import PathFinder
 
 
 class Game:
-    # Game quản lý bàn cờ, người chơi, lượt hiện tại và kết quả ván.
+    # Game quản lý bàn cờ, người chơi, lượt chơi và kết quả ván.
     def __init__(self):
         self.board = Board(size=9)
         self.players = [
@@ -12,6 +13,7 @@ class Game:
         ]
         self.current_turn = 0
         self.winner = None
+        self.path_finder = PathFinder()
 
     # Trả về người chơi đang đến lượt.
     @property
@@ -32,7 +34,7 @@ class Game:
                 return True
         return False
 
-    # Tính các ô mà người chơi có thể đi theo luật hiện tại.
+    # Tính các ô đi hợp lệ, gồm đi thường và nhảy qua đối thủ.
     def get_legal_moves(self, player=None):
         if self.winner is not None:
             return []
@@ -44,12 +46,7 @@ class Game:
         row, col = player.position
         moves = []
 
-        directions = [
-            (-1, 0),  # lên
-            (1, 0),   # xuống
-            (0, -1),  # trái
-            (0, 1),   # phải
-        ]
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         for row_change, col_change in directions:
             adjacent = (row + row_change, col + col_change)
@@ -60,7 +57,6 @@ class Game:
             if self.board.is_edge_blocked(player.position, adjacent):
                 continue
 
-            # Nếu ô kế bên là đối thủ, thử nhảy thẳng qua đối thủ.
             if adjacent == opponent.position:
                 behind = (
                     opponent.row + row_change,
@@ -73,21 +69,15 @@ class Game:
                 )
 
                 if can_jump_straight:
-                    if behind not in moves:
-                        moves.append(behind)
+                    moves.append(behind)
                 else:
-                    # Không thể nhảy thẳng vì mép bàn hoặc tường:
-                    # xét hai ô chéo hai bên đối thủ.
                     diagonal_directions = [
                         (-col_change, row_change),
                         (col_change, -row_change),
                     ]
 
-                    for diagonal_row_change, diagonal_col_change in diagonal_directions:
-                        diagonal = (
-                            opponent.row + diagonal_row_change,
-                            opponent.col + diagonal_col_change,
-                        )
+                    for dr, dc in diagonal_directions:
+                        diagonal = (opponent.row + dr, opponent.col + dc)
 
                         if not self.board.is_inside(*diagonal):
                             continue
@@ -95,20 +85,15 @@ class Game:
                         if self.board.is_edge_blocked(opponent.position, diagonal):
                             continue
 
-                        if self._is_occupied_by_other_player(diagonal, player):
-                            continue
-
-                        if diagonal not in moves:
+                        if not self._is_occupied_by_other_player(diagonal, player):
                             moves.append(diagonal)
 
-            # Nếu ô kế bên trống, đây là nước đi một ô bình thường.
             elif not self._is_occupied_by_other_player(adjacent, player):
-                if adjacent not in moves:
-                    moves.append(adjacent)
+                moves.append(adjacent)
 
         return moves
 
-    # Thực hiện nước đi nếu ô đích nằm trong danh sách nước hợp lệ.
+    # Thực hiện nước đi hợp lệ; sau đó đổi lượt hoặc ghi nhận người thắng.
     def move_current_player(self, destination):
         if destination not in self.get_legal_moves():
             return False
@@ -123,6 +108,30 @@ class Game:
 
         return True
 
-    # Kiểm tra quân đã đến hàng đích của người chơi chưa.
+    # Kiểm tra quân đã tới hàng đích của người chơi chưa.
     def has_won(self, player):
         return player.row == player.goal_row
+
+    # Đặt tường nếu hợp lệ và không khóa hết đường của bên nào.
+    def place_wall_current_player(self, orientation, row, col):
+        if self.winner is not None:
+            return False
+
+        player = self.current_player
+
+        if player.walls_remaining <= 0:
+            return False
+
+        if not self.board.place_wall(orientation, row, col):
+            return False
+
+        if not self.path_finder.both_players_have_paths(
+            self.board,
+            self.players,
+        ):
+            self.board.remove_wall(orientation, row, col)
+            return False
+
+        player.walls_remaining -= 1
+        self.current_turn = 1 - self.current_turn
+        return True
