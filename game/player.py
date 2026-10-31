@@ -1,5 +1,6 @@
+# Lưu thông tin và vị trí của một người chơi.
 class Player:
-    # Player lưu tên, vị trí quân, hàng đích và số tường của một người chơi.
+    # Khởi tạo vị trí xuất phát, hàng đích và 10 tường.
     def __init__(self, name, row, col, goal_row):
         self.name = name
         self.row = row

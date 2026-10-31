@@ -1,8 +1,9 @@
 from collections import deque
 
 
+# Dùng BFS để kiểm tra đường tới hàng đích.
 class PathFinder:
-    # PathFinder dùng BFS để xác định một người chơi còn đường tới hàng đích không.
+    # Kiểm tra từ ô xuất phát có đường tới hàng đích hay không.
     def has_path(self, board, start, goal_row):
         queue = deque([start])
         visited = {start}

@@ -1,5 +1,6 @@
+# Lưu kích thước bàn cờ, các cạnh bị chặn và vị trí tường.
 class Board:
-    # Board lưu kích thước bàn cờ, các cạnh bị chặn và vị trí các bức tường.
+    # Khởi tạo bàn cờ chưa có tường.
     def __init__(self, size=9):
         self.size = size
         self.blocked_edges = set()

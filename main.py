@@ -27,6 +27,8 @@ while running:
         wall_preview,
     )
 
+    # Giới hạn vòng lặp ở 60 khung hình mỗi giây.
     view.clock.tick(60)
 
+# Giải phóng tài nguyên Pygame sau khi thoát vòng lặp.
 pygame.quit()

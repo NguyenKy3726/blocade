@@ -3,8 +3,9 @@ from game.player import Player
 from game.pathfinder import PathFinder
 
 
+# Quản lý bàn cờ, người chơi, lượt chơi và kết quả ván.
 class Game:
-    # Game quản lý bàn cờ, người chơi, lượt chơi và kết quả ván.
+    # Khởi tạo ván hai người trên bàn cờ 9×9.
     def __init__(self):
         self.board = Board(size=9)
         self.players = [
@@ -112,30 +113,7 @@ class Game:
     def has_won(self, player):
         return player.row == player.goal_row
 
-    # Đặt tường nếu hợp lệ và không khóa hết đường của bên nào.
-    def place_wall_current_player(self, orientation, row, col):
-        if self.winner is not None:
-            return False
-
-        player = self.current_player
-
-        if player.walls_remaining <= 0:
-            return False
-
-        if not self.board.place_wall(orientation, row, col):
-            return False
-
-        if not self.path_finder.both_players_have_paths(
-            self.board,
-            self.players,
-        ):
-            self.board.remove_wall(orientation, row, col)
-            return False
-
-        player.walls_remaining -= 1
-        self.current_turn = 1 - self.current_turn
-        return True
-        # Đặt thử tường, chạy BFS cho cả hai người rồi gỡ tường thử.
+    # Đặt thử tường, chạy BFS cho cả hai người rồi gỡ tường thử.
     # Dùng để tô màu xem trước trên UI mà không làm đổi trạng thái bàn cờ.
     def can_place_wall_current_player(self, orientation, row, col):
         player = self.current_player

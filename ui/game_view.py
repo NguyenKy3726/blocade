@@ -1,8 +1,9 @@
 import pygame
 
 
+# Vẽ giao diện; luật chơi được xử lý trong Game.
 class GameView:
-    # GameView chỉ vẽ giao diện; luật chơi được xử lý trong Game.
+    # Khởi tạo Pygame, cửa sổ, font và thông số bàn cờ.
     def __init__(self):
         pygame.init()
 
@@ -182,7 +183,7 @@ class GameView:
 
         pygame.display.flip()
 
-        # Đổi vị trí chuột thành điểm neo của tường.
+    # Đổi vị trí chuột thành điểm neo của tường.
     # Người chơi phải đưa chuột vào khe đúng hướng.
     def wall_anchor_at_position(self, mouse_position, orientation):
         mouse_x, mouse_y = mouse_position

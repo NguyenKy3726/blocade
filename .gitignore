@@ -1,0 +1,6 @@
+# Môi trường Python cục bộ.
+.venv/
+
+# Cache và mã bytecode do Python tự tạo.
+__pycache__/
+*.py[cod]

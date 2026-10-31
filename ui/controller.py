@@ -1,8 +1,9 @@
 import pygame
 
 
+# Chuyển thao tác chuột và bàn phím thành yêu cầu cho game.
 class GameController:
-    # GameController kết nối thao tác người chơi với Game và GameView.
+    # Kết nối game với giao diện và khởi tạo trạng thái thao tác.
     def __init__(self, game, view):
         self.game = game
         self.view = view
