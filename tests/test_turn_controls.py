@@ -204,7 +204,8 @@ class MouseTests(unittest.TestCase):
         self.view.draw(self.game)
         for row, col in self.game.get_legal_moves():
             center = self.position(col * 66 + 29, row * 66 + 29)
-            self.assertEqual(tuple(self.view.screen.get_at(center))[:3], (85, 145, 90))
+            expected_color = [(85, 145, 90), (40, 120, 190)][self.game.current_turn]
+            self.assertEqual(tuple(self.view.screen.get_at(center))[:3], expected_color)
 
     # Click một lần để đi; gợi ý cập nhật sau nước đi, tường và mất lượt.
     def test_direct_move_and_automatic_hints(self):

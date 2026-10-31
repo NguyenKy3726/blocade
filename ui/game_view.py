@@ -34,6 +34,7 @@ class GameView:
         self.cell_colors = [(234, 220, 191), (218, 197, 160)]
         # Phe 1 xanh lá, phe 2 xanh nước; xem trước hợp lệ dùng màu nhạt hơn.
         self.player_colors = [(46, 139, 87), (40, 120, 190)]
+        self.move_hint_colors = [(85, 145, 90), self.player_colors[1]]
         self.wall_preview_colors = [(132, 204, 158), (133, 192, 235)]
         self.invalid_wall_color = (190, 65, 55)
         self.text_color = (70, 52, 38)
@@ -93,7 +94,7 @@ class GameView:
                 )
 
     # Tô viền quân đang tới lượt và đánh dấu các ô có thể đi.
-    def draw_move_hints(self, selected_position, legal_moves):
+    def draw_move_hints(self, selected_position, legal_moves, player_index=0):
         if selected_position is not None:
             row, col = selected_position
             x = self.board_x + col * self.cell_stride
@@ -112,7 +113,7 @@ class GameView:
                 self.board_x + col * self.cell_stride + self.cell_size // 2,
                 self.board_y + row * self.cell_stride + self.cell_size // 2,
             )
-            pygame.draw.circle(self.screen, (85, 145, 90), center, 8)
+            pygame.draw.circle(self.screen, self.move_hint_colors[player_index], center, 8)
 
     # Vẽ quân cờ tại vị trí hiện tại của mỗi người chơi.
     def draw_players(self, game):
@@ -193,7 +194,7 @@ class GameView:
         # Luôn hiện nước đi và viền quân bên đang tới lượt, không cần chọn quân.
         legal_moves = game.get_legal_moves()
         active_position = game.current_player.position if game.winner is None else None
-        self.draw_move_hints(active_position, legal_moves)
+        self.draw_move_hints(active_position, legal_moves, game.current_turn)
         self.draw_players(game)
         self.draw_info(game)
         if wall_preview is not None:
