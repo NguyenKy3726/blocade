@@ -135,3 +135,33 @@ class Game:
         player.walls_remaining -= 1
         self.current_turn = 1 - self.current_turn
         return True
+        # Đặt thử tường, chạy BFS cho cả hai người rồi gỡ tường thử.
+    # Dùng để tô màu xem trước trên UI mà không làm đổi trạng thái bàn cờ.
+    def can_place_wall_current_player(self, orientation, row, col):
+        player = self.current_player
+
+        if self.winner is not None or player.walls_remaining <= 0:
+            return False
+
+        if not self.board.place_wall(orientation, row, col):
+            return False
+
+        both_have_paths = self.path_finder.both_players_have_paths(
+            self.board,
+            self.players,
+        )
+
+        self.board.remove_wall(orientation, row, col)
+        return both_have_paths
+
+    # Đặt tường hợp lệ, trừ một tường của người chơi và chuyển lượt.
+    def place_wall_current_player(self, orientation, row, col):
+        if not self.can_place_wall_current_player(orientation, row, col):
+            return False
+
+        if not self.board.place_wall(orientation, row, col):
+            return False
+
+        self.current_player.walls_remaining -= 1
+        self.current_turn = 1 - self.current_turn
+        return True
