@@ -12,7 +12,7 @@ controller = GameController(game, view)
 
 running = True
 
-# Vòng lặp chính chuyển từng sự kiện cho GameController xử lý.
+# Vòng lặp chuyển sự kiện cho controller tạo và thực thi Command tương ứng.
 while running:
     # Cập nhật giờ trước thao tác; bỏ click cũ trong khung hình vừa hết giờ.
     expired = controller.update()

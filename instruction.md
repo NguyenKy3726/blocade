@@ -165,13 +165,13 @@ Thứ tự này giúp bạn kiểm chứng luật nhảy qua quân trong chế �
 
 12.1. Điều khiển đặt tường
 
-Trạng thái hiện tại: người chơi phải nhấn H để vào chế độ đặt tường ngang hoặc V để vào chế độ đặt tường dọc. Sau khi đặt thành công, chế độ đặt tường tắt nên phải nhấn phím lại cho lần đặt tiếp theo.
+Trạng thái hiện tại: đặt tường bằng chuột, hướng ngang/dọc được xác định theo khe con trỏ đang trỏ. Không còn chế độ khóa hướng H/V hoặc hủy bằng Esc.
 
 Yêu cầu mới của người chơi:
 - Không bắt buộc nhấn H/V để đặt tường.
 - Trong cùng một chế độ chơi, người chơi có thể chọn đặt tường ngang hoặc dọc mà không cần chuyển chế độ bằng bàn phím.
 - Hướng tường cần được chọn bằng thao tác chuột rõ ràng, có hình xem trước trước khi xác nhận.
-- Nếu thuận tiện cho người dùng, có thể giữ H/V như phím tắt tùy chọn; chúng không được là cách duy nhất để đặt tường.
+- Theo cập nhật đã chốt: bỏ H/V/Esc cho thao tác đặt tường; chỉ dùng chuột.
 - Hình xem trước phải phân biệt vị trí hợp lệ và không hợp lệ. Tường chỉ được đặt sau khi người chơi xác nhận bằng chuột.
 - Thiết kế cách chọn hướng phải rõ ràng cả tại vị trí có thể đặt tường ngang lẫn dọc; tránh trường hợp người chơi không biết hướng nào đang được chọn.
 
@@ -191,7 +191,7 @@ Gợi ý: bắt đầu với đồng hồ hiển thị riêng cho mỗi người
    - Chọn được cả tường ngang và dọc bằng chuột trong cùng chế độ.
    - Hiển thị hướng/vị trí xem trước, phân biệt hợp lệ/không hợp lệ.
    - Click xác nhận đặt một tường và chuyển lượt đúng một lần.
-   - Phím H/V, nếu giữ lại, chỉ là cách thao tác nhanh tùy chọn.
+   - Không còn khóa hướng H/V/Esc.
 2. Chốt quy tắc đồng hồ với người chơi, sau đó thêm timer và hiển thị rõ lượt/thời gian còn lại.
 3. Rà chế độ hai người bằng các trường hợp: đi thường; nhảy thẳng; nhảy chéo khi sát mép hoặc bị tường chặn; đặt tường ngang/dọc; tường chồng/cắt; tường bị từ chối vì khóa đường; số tường, chuyển lượt và thắng ván.
 4. Hoàn thiện trải nghiệm hai người: nút chơi lại, nút về menu và trạng thái kết thúc rõ ràng. Theo lựa chọn mới của người chơi, không bổ sung thông báo lý do nước đi/tường bị từ chối.
@@ -207,12 +207,19 @@ Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ t�
 - Mỗi người có đồng hồ riêng, đếm ngược 30 giây cho mỗi lượt. Chỉ bên đang tới lượt chạy đồng hồ; bên chờ giữ nguyên số hiển thị tới lượt tiếp theo.
 - Đi quân hoặc đặt tường hợp lệ kết thúc lượt. Khi nhận lượt mới, đồng hồ của người đó được đặt lại thành 30 giây.
 - Hết giờ thì mất lượt, không bị xử thua và không bị trừ tường. Nước đi hoặc tường không hợp lệ không đặt lại đồng hồ.
-- Khi có người thắng, cả hai đồng hồ dừng. Nút Chơi lại ở bên phải bàn dùng được cả trong ván và sau khi thắng: đưa quân về vị trí đầu, xóa tường và màu sở hữu, cấp lại 10 tường và 30 giây mỗi phe, xanh lá đi trước, bỏ khóa H/V và thông báo hết giờ. Menu chưa được triển khai.
+- Khi có người thắng, cả hai đồng hồ dừng. Nút Chơi lại ở bên phải bàn dùng được cả trong ván và sau khi thắng: đưa quân về vị trí đầu, xóa tường và màu sở hữu, cấp lại 10 tường và 30 giây mỗi phe, xanh lá đi trước, xóa lựa chọn cũ và thông báo hết giờ. Menu chưa được triển khai.
 - Đưa chuột vào khe ngang/dọc để xem trước; click trái để xác nhận đặt tường. Tại giao điểm, hướng theo đường giữa khe gần chuột hơn; nếu bằng nhau thì chưa chọn hướng, hãy dịch chuột vào khe muốn đặt.
-- H/V là phím tắt khóa hướng tùy chọn; Esc bỏ khóa và trở lại chọn hướng bằng chuột.
+- Đặt tường hoàn toàn bằng chuột; H/V/Esc không thay đổi hướng hoặc chế độ chơi.
 - Hai phe dùng màu xanh lá (người chơi 1) và xanh nước (người chơi 2), áp dụng cho quân và tường đã đặt.
 - Tường xem trước hợp lệ dùng màu nhạt hơn của phe đang tới lượt; không hợp lệ luôn màu đỏ, kèm chữ ghi hướng và tính hợp lệ.
 - Chấm gợi ý nước đi của phe xanh lá giữ màu xanh lá hiện tại; phe xanh nước dùng màu xanh nước cùng màu quân.
 - Các ô đi hợp lệ hiện ngay khi tới lượt, kể cả sau khi đặt tường hoặc hết giờ. Click thẳng ô đích để di chuyển, không cần chọn quân. Khi ván kết thúc, không còn gợi ý đi.
 - Bộ kiểm tra mới: chạy `python -m unittest discover -s tests -v` từ thư mục repo trên Windows có Pygame và font Arial. Các kiểm tra dùng SDL headless và đồng hồ giả, không thay thế việc kiểm tra GUI bằng tay.
 - Trên Codex/Linux, đường dẫn font Windows vẫn được hỗ trợ bởi cấu hình cục bộ đã thiết lập: chạy từ `/workspace/blocade-runtime`, dùng Python `/workspace/blocade-env/bin/python`, đặt `PYTHONPATH=/workspace/blocade` và truyền `-m unittest discover -s /workspace/blocade/tests -v`. Font đa nền tảng trong mã nguồn vẫn là việc riêng cần xử lý sau.
+
+12.5. Command cho hành động đi quân và đặt tường
+
+- `game/commands.py` định nghĩa giao diện `Command.execute()` và hai lệnh `MoveCommand`, `PlaceWallCommand`.
+- Controller nhận click, đổi tọa độ chuột thành ô đích hoặc tường rồi tạo lệnh và gọi `execute()` ngay. Lệnh không được lưu hàng đợi hoặc tự chạy lại.
+- Tạo Command chỉ lưu yêu cầu; `execute()` mới gọi Game và trả về True/False. Game vẫn là nơi kiểm tra nước đi, tường, BFS, số tường, thời gian và cập nhật lượt/kết quả. Không chép luật sang Command hoặc controller.
+- Xem trước không thực thi Command. Chơi lại và hết giờ vẫn do luồng hiện tại xử lý, chưa có hoàn tác/lịch sử hoặc bot.

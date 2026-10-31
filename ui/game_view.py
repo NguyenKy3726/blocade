@@ -218,7 +218,7 @@ class GameView:
             self.draw_text("Đưa chuột vào khe ngang/dọc.", self.small_font,
                            self.text_color, 700, 580)
         if game.winner is None:
-            self.draw_text("H/V: khóa hướng; Esc: tự chọn.", self.small_font,
+            self.draw_text("Click ô được đánh dấu để đi.", self.small_font,
                            self.text_color, 700, 610)
 
         self.draw_restart_button()

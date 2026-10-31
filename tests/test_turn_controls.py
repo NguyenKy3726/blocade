@@ -10,6 +10,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame
 
 from game.game import Game
+from game.commands import MoveCommand, PlaceWallCommand
 from ui.controller import GameController
 from ui.game_view import GameView
 
@@ -176,14 +177,12 @@ class MouseTests(unittest.TestCase):
         for position in [(-1, 0), (586, 0), (0, 586), (20, 20)]:
             self.assertIsNone(self.view.wall_at_position(self.position(*position)))
 
-    # Hết giờ xóa lựa chọn quân/hướng; click cũ không đặt tường cho bên kia.
+    # Hết giờ xóa lựa chọn cũ; click tại hạn không đặt tường cho bên kia.
     def test_timeout_clears_selection(self):
         self.controller.selected_position = (0, 4)
-        self.controller.placing_wall = True
         self.clock.now += 30
         self.click(self.position(20, 62))
         self.assertIsNone(self.controller.selected_position)
-        self.assertFalse(self.controller.placing_wall)
         self.assertEqual(self.game.board.walls, [])
         self.assertEqual(self.game.current_turn, 1)
 
@@ -254,8 +253,6 @@ class MouseTests(unittest.TestCase):
         self.assertEqual(self.game.turn_started_at, self.clock.now)
         self.assertEqual(self.game.notice, "")
         self.assertIsNone(self.controller.selected_position)
-        self.assertFalse(self.controller.placing_wall)
-        self.assertEqual(self.controller.wall_orientation, "horizontal")
         self.assertIs(pygame.display.get_surface(), self.view.screen)
         self.assert_visible_moves()
 
@@ -263,8 +260,6 @@ class MouseTests(unittest.TestCase):
     def test_restart_during_game(self):
         self.assertTrue(self.game.place_wall_current_player("horizontal", 2, 2))
         self.assertTrue(self.game.move_current_player((7, 4)))
-        self.controller.placing_wall = True
-        self.controller.wall_orientation = "vertical"
         self.controller.selected_position = (0, 4)
         self.clock.now += 12
         self.controller.update()
@@ -327,6 +322,47 @@ class MouseTests(unittest.TestCase):
         draw.assert_called_once()
         self.assertIs(draw.call_args.args[0], self.game)
         self.assertIs(result["controller"].game, self.game)
+
+    # Click phải qua đúng Command; di chuyển và đặt tường vẫn đổi lượt một lần.
+    def test_controller_executes_commands(self):
+        with patch("ui.controller.MoveCommand", wraps=MoveCommand) as move, \
+                patch("ui.controller.PlaceWallCommand", wraps=PlaceWallCommand) as wall:
+            self.click(self.position(4 * 66 + 20, 66 + 20))
+            move.assert_called_once_with(self.game, (1, 4))
+            wall.assert_not_called()
+            self.assertEqual(self.game.players[0].position, (1, 4))
+            self.assertEqual(self.game.current_turn, 1)
+            self.click(self.position(20, 62))
+            wall.assert_called_once_with(self.game, "horizontal", 0, 0)
+            self.assertEqual(self.game.current_turn, 0)
+            self.assertEqual(self.game.wall_owners, {("horizontal", 0, 0): 1})
+
+    # H/V/Esc không khóa hướng, đổi lượt hoặc cản xem trước bằng chuột nữa.
+    def test_keyboard_does_not_lock_wall_direction(self):
+        horizontal = self.position(20, 62)
+        vertical = self.position(2 * 66 + 62, 2 * 66 + 20)
+        for key in (pygame.K_h, pygame.K_v, pygame.K_ESCAPE):
+            self.controller.handle_event(pygame.event.Event(pygame.KEYDOWN, key=key))
+            self.assertEqual(self.controller.get_wall_preview(horizontal),
+                             ("horizontal", 0, 0, True))
+            self.assertEqual(self.controller.get_wall_preview(vertical),
+                             ("vertical", 2, 2, True))
+            self.assertEqual(self.game.current_turn, 0)
+            self.assertEqual(self.game.board.walls, [])
+        self.click(vertical)
+        self.click(horizontal)
+        self.assertEqual(self.game.board.walls,
+                         [("vertical", 2, 2), ("horizontal", 0, 0)])
+
+    # Xem trước chỉ kiểm tra luật, không được tạo hay thực thi Command.
+    def test_preview_does_not_execute_commands(self):
+        with patch("ui.controller.MoveCommand") as move, \
+                patch("ui.controller.PlaceWallCommand") as wall:
+            self.assertTrue(self.controller.get_wall_preview(self.position(20, 62))[3])
+            move.assert_not_called()
+            wall.assert_not_called()
+        self.assertEqual(self.game.board.walls, [])
+        self.assertEqual(self.game.current_turn, 0)
 
 
 if __name__ == "__main__":
