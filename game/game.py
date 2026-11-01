@@ -34,6 +34,7 @@ class Game:
         self.wall_owners = {}
         self.notice = ""
         self.command_history = []
+        self.redo_history = []
 
     # Chụp dữ liệu có thể đổi trong hành động; tạo bản sao để lịch sử không bị ghi đè.
     def capture_state(self):
@@ -76,6 +77,23 @@ class Game:
             if not command.undo():
                 return False
             if command.player_index == 0:
+                return True
+        return False
+
+    # Chỉ đấu bot có Redo, khi có Command đã Undo của ván hiện tại.
+    @property
+    def can_redo(self):
+        return self.mode == "bot" and bool(self.redo_history)
+
+    # Làm lại lệnh người rồi lệnh bot đã có, dừng trước lượt người kế tiếp.
+    def redo_round(self):
+        if not self.can_redo:
+            return False
+        while self.redo_history:
+            command = self.redo_history[-1]
+            if not command.redo():
+                return False
+            if not self.redo_history or self.redo_history[-1].player_index == 0:
                 return True
         return False
 

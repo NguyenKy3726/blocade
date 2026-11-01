@@ -40,7 +40,8 @@ class GameView:
         self.text_color = (70, 52, 38)
         self.restart_button_rect = pygame.Rect(700, 650, 250, 52)
         self.menu_button_rect = pygame.Rect(700, 720, 250, 52)
-        self.undo_button_rect = pygame.Rect(700, 600, 250, 40)
+        self.undo_button_rect = pygame.Rect(700, 600, 120, 40)
+        self.redo_button_rect = pygame.Rect(830, 600, 120, 40)
 
     # Vẽ chữ lên màn hình tại vị trí được chỉ định.
     def draw_text(self, text, font, color, x, y):
@@ -201,16 +202,23 @@ class GameView:
             label = self.font.render(text, True, self.text_color)
             self.screen.blit(label, label.get_rect(center=rect.center))
 
-    # Chỉ hiện Undo khi đấu bot; làm mờ nút nếu chưa có hành động để lùi.
-    def draw_undo_button(self, enabled):
-        rect = self.undo_button_rect
+    # Vẽ nút lịch sử, làm mờ khi không có hành động tương ứng.
+    def draw_history_button(self, rect, text, enabled):
         hovered = enabled and rect.collidepoint(pygame.mouse.get_pos())
         color = (222, 198, 155) if hovered else (234, 220, 191)
         text_color = self.text_color if enabled else (153, 145, 130)
         pygame.draw.rect(self.screen, color, rect, border_radius=8)
         pygame.draw.rect(self.screen, text_color, rect, width=2, border_radius=8)
-        label = self.font.render("Undo", True, text_color)
+        label = self.font.render(text, True, text_color)
         self.screen.blit(label, label.get_rect(center=rect.center))
+
+    # Chỉ hiện Undo khi đấu bot; giữ hàm riêng để kiểm tra trạng thái nút.
+    def draw_undo_button(self, enabled):
+        self.draw_history_button(self.undo_button_rect, "Undo", enabled)
+
+    # Redo nằm cạnh Undo và chỉ bật khi còn nhánh có thể làm lại.
+    def draw_redo_button(self, enabled):
+        self.draw_history_button(self.redo_button_rect, "Redo", enabled)
 
     # Vẽ toàn bộ giao diện theo trạng thái ván chơi hiện tại.
     def draw(self, game, selected_position=None, wall_preview=None):
@@ -244,6 +252,7 @@ class GameView:
 
         if game.mode == "bot":
             self.draw_undo_button(game.can_undo)
+            self.draw_redo_button(game.can_redo)
         self.draw_navigation_buttons()
         pygame.display.flip()
 

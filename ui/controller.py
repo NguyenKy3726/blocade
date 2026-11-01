@@ -30,6 +30,15 @@ class GameController:
             and self.view.undo_button_rect.collidepoint(event.pos)
         )
 
+    # Redo được nhận cả sau thắng và trước khi kiểm tra lượt bot.
+    def is_redo_event(self, event):
+        return (
+            self.game.mode == "bot"
+            and event.type == pygame.MOUSEBUTTONDOWN
+            and event.button == 1
+            and self.view.redo_button_rect.collidepoint(event.pos)
+        )
+
     # Chơi lại trên cùng cửa sổ và bỏ trạng thái thao tác của ván cũ.
     def restart_game(self, mode=None):
         self.game.reset(mode=mode)
@@ -61,6 +70,11 @@ class GameController:
 
         if self.is_undo_event(event):
             self.game.undo_round()
+            self.selected_position = None
+            return True
+
+        if self.is_redo_event(event):
+            self.game.redo_round()
             self.selected_position = None
             return True
 

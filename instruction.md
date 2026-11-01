@@ -222,7 +222,7 @@ Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ t�
 - `game/commands.py` định nghĩa giao diện `Command.execute()` và hai lệnh `MoveCommand`, `PlaceWallCommand`.
 - Controller nhận click, đổi tọa độ chuột thành ô đích hoặc tường rồi tạo lệnh và gọi `execute()` ngay. Lệnh không được lưu hàng đợi hoặc tự chạy lại.
 - Tạo Command chỉ lưu yêu cầu; `execute()` mới gọi Game và trả về True/False. Game vẫn là nơi kiểm tra nước đi, tường, BFS, số tường, thời gian và cập nhật lượt/kết quả. Không chép luật sang Command hoặc controller.
-- Xem trước không thực thi Command. Lịch sử chỉ lưu Command thành công khi đấu bot; Command.undo() khôi phục trạng thái đã lưu. Chơi lại và hết giờ vẫn do luồng hiện tại xử lý.
+- Xem trước không thực thi Command. Lịch sử chỉ lưu Command thành công khi đấu bot; Command.undo()/redo() khôi phục trạng thái trước/sau đã lưu. Chơi lại và hết giờ vẫn do luồng hiện tại xử lý.
 
 12.6. Quy tắc đấu bot/Undo đã chốt và lộ trình tiếp theo
 
@@ -234,7 +234,7 @@ Mục này ưu tiên hơn thứ tự cũ khi có khác nhau:
 
 1. Menu (đã hoàn thành): mở ứng dụng ở menu, vào Hai người chơi, Chơi lại/Về menu cả trước và sau thắng; không tính giờ ở menu. Vào lại bắt đầu ván mới, không tiếp tục ván cũ. Lựa chọn Đấu bot dễ đã được thêm khi bot hoạt động.
 2. Bot dễ (đã hoàn thành): lựa chọn Đấu bot dễ trên menu, dùng chung luật/Command, không có đồng hồ; người đi rồi bot đáp trả.
-3. Undo đấu bot (đã hoàn thành): bổ sung trạng thái trước hành động, lịch sử và hoàn tác cặp lượt theo quy tắc trên; xóa lịch sử khi Chơi lại hoặc bắt đầu ván mới.
+3. Undo/Redo đấu bot (đã hoàn thành): bổ sung trạng thái trước hành động, lịch sử và hoàn tác cặp lượt theo quy tắc trên; xóa lịch sử khi Chơi lại hoặc bắt đầu ván mới.
 4. Bot trung bình rồi khó (bước tiếp theo): dùng Strategy/Factory theo cấp; bổ sung BFS khoảng cách và thuật toán phù hợp khi cần.
 5. Hoàn thiện báo cáo/sơ đồ OOP/pattern; cân nhắc State khi luồng thực tế phức tạp hơn.
 
@@ -256,8 +256,21 @@ Luồng menu hiện dùng `AppController` với hai trạng thái menu/game và 
 - Khi đấu bot, nút Undo nằm trên Chơi lại. Nút bị mờ khi chưa có hành động của người để lùi. Chế độ hai người không hiện nút hoặc cho Undo.
 - Bot đã đáp trả: Undo gọi undo() của lệnh bot, rồi của lệnh người gần nhất, trả về lúc người chọn nước trước đó. Bot chưa đi (kể cả người vừa thắng): chỉ lùi lệnh người. Sau Undo, bot không được đáp trả cho tới khi người chọn một hành động hợp lệ mới.
 - Có thể Undo liên tiếp từng cặp lượt; dùng được sau người hoặc bot thắng. Nước không hợp lệ và hình xem trước không vào lịch sử.
-- Command.execute() dùng chung trong lớp cha: chụp trạng thái trước hành động, gọi _perform() của lệnh cụ thể, chỉ ghi lịch sử nếu thành công. MoveCommand và PlaceWallCommand kế thừa cả execute() và undo(), Game vẫn giữ toàn bộ luật.
+- Command.execute() dùng chung trong lớp cha: chụp trạng thái trước hành động, gọi _perform() của lệnh cụ thể, lưu cả trạng thái sau hành động và chỉ ghi lịch sử nếu thành công. MoveCommand và PlaceWallCommand kế thừa execute(), undo() và redo(), Game vẫn giữ toàn bộ luật.
 - Command.undo() chỉ chấp nhận lệnh trên cùng lịch sử và đúng ván. Nó khôi phục bản sao trạng thái qua Game.restore_state(), rồi bỏ lệnh khỏi lịch sử. Game.undo_round() chỉ điều phối thứ tự gọi undo() về tới lệnh của người, không tự suy ngược luật di chuyển/đặt tường.
 - Trạng thái gồm vị trí và số tường hai phe, danh sách tường/cạnh bị chặn, chủ sở hữu, lượt, người thắng, dữ liệu đồng hồ và thông báo. Đấu bot vẫn không chạy đồng hồ. Chỉ chụp dữ liệu của ván, không sao chép cửa sổ Pygame hoặc lịch sử vào snapshot.
-- Chơi lại, Về menu hoặc bắt đầu ván mới xóa lịch sử; lệnh giữ tham chiếu Board để không execute/undo xuyên sang ván mới. Không có Redo; mỗi Command thành công chỉ execute một lần, kể cả sau Undo.
+- Chơi lại, Về menu hoặc bắt đầu ván mới xóa lịch sử; lệnh giữ tham chiếu Board để không execute/undo xuyên sang ván mới. Mỗi Command thành công chỉ execute một lần; làm lại phải gọi redo() theo mục 12.9.
 - Test riêng: `python -m unittest discover -s tests -p test_undo.py -v`. Trên Windows cần thử đi quân/đặt tường → bot đáp trả → Undo, Undo nhiều lần, Undo sau thắng và Chơi lại/Về menu xóa lịch sử.
+
+12.9. Redo bằng Command pattern
+
+- Chế độ đấu bot có Redo cạnh Undo; nút bị mờ nếu chưa có lệnh đã Undo. Hai người không có Undo/Redo, vẫn giữ đồng hồ như cũ.
+- Command lưu before_state và after_state. undo() khôi phục before_state và chuyển chính Command đó từ command_history sang redo_history. redo() khôi phục after_state, chuyển lệnh về command_history, không gọi _perform() hoặc chọn lại nước bot.
+- Game.redo_round() gọi redo() theo thứ tự người rồi bot đã có, dừng trước lệnh người của vòng tiếp theo. Nếu trước Undo bot chưa đáp trả, chỉ khôi phục lệnh người; bot sau đó đi lần đầu theo luồng bình thường.
+- Có thể Undo/Redo liên tiếp nhiều vòng; khôi phục đúng quân, tường, cạnh bị chặn, màu, số tường, lượt và kết quả thắng. Redo cặp đầy đủ không khiến bot đánh thêm một nước.
+- Chọn hành động mới thành công sau Undo xóa toàn bộ redo_history. Nước sai, tường bị BFS từ chối và hình xem trước không xóa nhánh Redo.
+- Chơi lại, Về menu và bắt đầu ván mới xóa cả hai lịch sử. Command.redo() chỉ chấp nhận đúng lệnh trên cùng ngăn Redo, cùng Board và trạng thái hiện tại đúng before_state, tránh khôi phục trên ván/nhánh khác.
+- Mỗi execute() thành công dùng một lần; undo()/redo() có thể lặp lại. Các snapshot chỉ lưu dữ liệu ván, không lưu đệ quy các lịch sử.
+- Trong main, click Undo/Redo bỏ các sự kiện dư của khung hình để tránh thực hiện ngay một nước khác sau khi lùi/làm lại.
+- Test riêng: `python -m unittest discover -s tests -p test_redo.py -v`. Trên Windows thử đi/đặt tường → bot đáp trả → Undo → Redo, nhiều vòng liên tiếp, đổi nước sau Undo, Redo sau thắng và Chơi lại/Về menu xóa cả hai lịch sử.
+- Bước tiếp theo sau khi kiểm tra Undo/Redo là bot trung bình, tiếp tục dùng Command và không đồng hồ khi đấu bot.

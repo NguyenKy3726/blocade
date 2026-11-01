@@ -9,6 +9,7 @@ class Command(ABC):
         self.board = game.board
         self.player_index = None
         self.before_state = None
+        self.after_state = None
         self.executed = False
 
     # Kiểm tra luật qua Game rồi mới ghi lịch sử; mỗi lệnh chỉ thực thi một lần.
@@ -21,11 +22,14 @@ class Command(ABC):
         self.executed = True
         if before is not None:
             self.before_state = before
+            self.after_state = self.game.capture_state()
+            # Chỉ nước mới thành công mới bỏ nhánh đã Undo; xem trước/nước sai giữ nhánh.
+            self.game.redo_history.clear()
             self.player_index = before["current_turn"]
             self.game.command_history.append(self)
         return True
 
-    # Chỉ hoàn tác lệnh ở đỉnh lịch sử của cùng ván; không dùng lại lệnh đã undo.
+    # Lùi lệnh ở đỉnh lịch sử và chuyển nó sang ngăn Redo, giữ cả hai snapshot.
     def undo(self):
         history = self.game.command_history
         if (self.before_state is None or self.board is not self.game.board
@@ -33,7 +37,19 @@ class Command(ABC):
             return False
         self.game.restore_state(self.before_state)
         history.pop()
-        self.before_state = None
+        self.game.redo_history.append(self)
+        return True
+
+    # Làm lại đúng lệnh vừa Undo, không gọi luật hoặc để bot chọn hành động mới.
+    def redo(self):
+        history = self.game.redo_history
+        if (self.after_state is None or self.board is not self.game.board
+                or self.game.mode != "bot" or not history or history[-1] is not self
+                or self.game.capture_state() != self.before_state):
+            return False
+        self.game.restore_state(self.after_state)
+        history.pop()
+        self.game.command_history.append(self)
         return True
 
     # Mỗi loại lệnh chỉ cần chỉ ra hành động cụ thể; Game giữ toàn bộ luật.

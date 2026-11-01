@@ -26,7 +26,7 @@ class AppController:
             view = self.game_controller.view
             rects = (view.restart_button_rect, view.menu_button_rect)
             if self.game_controller.game.mode == "bot":
-                rects += (view.undo_button_rect,)
+                rects += (view.undo_button_rect, view.redo_button_rect)
         return any(rect.collidepoint(event.pos) for rect in rects)
 
     # Ưu tiên đóng cửa sổ và nút điều hướng trước khi giao sự kiện cho ván.
@@ -47,6 +47,7 @@ class AppController:
         if left_click and self.game_controller.view.menu_button_rect.collidepoint(event.pos):
             self.game_controller.selected_position = None
             self.game_controller.game.command_history.clear()
+            self.game_controller.game.redo_history.clear()
             self.screen = "menu"
             return True
         return self.game_controller.handle_event(event)

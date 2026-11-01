@@ -24,7 +24,7 @@ while running:
         if expired and event.type != pygame.QUIT and not navigating:
             continue
         running = app.handle_event(event)
-        # Bỏ click cũ sau điều hướng hoặc Undo, tránh đánh lại ngay nước vừa lùi.
+        # Bỏ click cũ sau điều hướng hoặc Undo/Redo, tránh đánh lại ngay nước vừa lùi.
         if not running or navigating:
             break
 
