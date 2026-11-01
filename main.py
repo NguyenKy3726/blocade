@@ -33,7 +33,8 @@ while running:
 
     # Sau click, BotTurnState tiến một đoạn tìm kiếm hoặc đáp trả; vẫn nhường UI mỗi khung hình.
     app.update_bot()
-    # Vẽ menu hoặc bàn cờ; chỉ tính hình xem trước khi đang trong ván.
+    # Vẽ chất liệu gỗ và nội suy animation; Game/Command đã cập nhật trước đó.
+    # Âm thanh chỉ phát khi có hành động, không phát lại mỗi lần vẽ.
     app.draw()
     view.clock.tick(60)
 

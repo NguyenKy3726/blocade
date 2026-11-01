@@ -75,7 +75,7 @@ class MenuTests(unittest.TestCase):
                 if state == "timeout":
                     self.now += 30
                     self.assertTrue(self.app.update())
-                self.assertTrue(self.click(self.view.menu_button_rect.center))
+                self.assertTrue(self.click(self.view.menu_rect(self.game).center))
                 self.assertEqual(self.app.screen, "menu")
                 remaining = self.game.time_remaining.copy()
                 self.now += 120
@@ -93,7 +93,7 @@ class MenuTests(unittest.TestCase):
                 self.assertEqual(self.game.current_turn, 0)
                 self.assertIsNone(self.game.winner)
                 # Chuẩn bị màn hình menu cho tình huống kế tiếp.
-                self.click(self.view.menu_button_rect.center)
+                self.click(self.view.menu_rect(self.game).center)
 
     # Trong ván, AppController vẫn chuyển click cho Command và nút Chơi lại.
     def test_game_actions_and_restart_through_app(self):
@@ -103,7 +103,7 @@ class MenuTests(unittest.TestCase):
         self.assertEqual(self.game.current_turn, 1)
         self.now += 30
         self.assertTrue(self.app.update())
-        self.click(self.view.restart_button_rect.center)
+        self.click(self.view.restart_rect(self.game).center)
         self.assertEqual(self.app.screen, "game")
         self.assertEqual(self.game.players[0].position, (0, 4))
         self.assertEqual(self.game.time_remaining, [30, 30])
@@ -116,7 +116,7 @@ class MenuTests(unittest.TestCase):
         event.button = 3
         self.assertFalse(self.app.is_navigation_event(event))
         start_game(self.app, self.menu, mode="two_players", level="easy")
-        for rect in (self.view.restart_button_rect, self.view.menu_button_rect):
+        for rect in (self.view.restart_rect(self.game), self.view.menu_rect(self.game)):
             event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=rect.center)
             self.assertTrue(self.app.is_navigation_event(event))
         self.assertFalse(self.app.is_navigation_event(pygame.event.Event(pygame.QUIT)))

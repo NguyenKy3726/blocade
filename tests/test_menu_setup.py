@@ -10,7 +10,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame
 
 from game.game import Game
-from tests.support import start_game
+from tests.support import start_game, settle_effects, assert_wood_color
 from ui.app_controller import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -126,14 +126,13 @@ class MenuSetupTests(unittest.TestCase):
                         self.assertEqual(len(self.game.command_history), 1)
                         self.assertFalse(self.game.can_undo)
 
-    # Đổi số trên quân theo lựa chọn, vẫn giữ màu xanh lá/xanh nước theo phe.
-    def test_rendered_numbers_and_sidebar(self):
+    # Không render số trên quân; bảng thông tin vẫn giữ tên phe và số tường.
+    def test_no_numbers_on_pawns_and_sidebar(self):
         for human_first in (True, False):
             self.game.reset(mode="bot", human_first=human_first)
             with patch.object(self.view, "small_font", wraps=self.view.small_font) as font:
                 self.view.draw_players(self.game)
-                self.assertEqual([call.args[0] for call in font.render.call_args_list],
-                                 ["1", "2"] if human_first else ["2", "1"])
+                font.render.assert_not_called()
             with patch.object(self.view, "draw_text", wraps=self.view.draw_text) as text:
                 self.view.draw_info(self.game)
                 labels = [call.args[0] for call in text.call_args_list]
@@ -143,7 +142,7 @@ class MenuSetupTests(unittest.TestCase):
     # Chuyển từ đấu bot chơi sau sang hai người: vào ngay và đặt lại số 1 đi trước.
     def test_two_players_start_directly_with_correct_clock(self):
         start_game(self.app, self.menu, human_first=False)
-        self.click(self.view.menu_button_rect)
+        self.click(self.view.menu_rect(self.game))
         self.now += 100
         self.click(self.menu.start_button_rect)
         self.assertIsInstance(self.app.state, HumanTurnState)
@@ -242,7 +241,7 @@ class MenuSetupTests(unittest.TestCase):
         self.click(self.view.redo_button_rect)
         self.assertEqual(self.game.capture_state(), after_round)
         self.assertFalse(self.app.update_bot())
-        self.click(self.view.restart_button_rect)
+        self.click(self.view.restart_rect(self.game))
         self.assertFalse(self.game.human_first)
         self.assertEqual(self.game.current_turn, 1)
         self.assertIsInstance(self.app.state, BotTurnState)
@@ -281,9 +280,9 @@ class MenuSetupTests(unittest.TestCase):
                             pygame.MOUSEBUTTONDOWN, button=1, pos=point))
                         self.assertEqual(self.game.board.walls, [(orientation, row, col)])
                         self.assertTrue(self.game.board.is_edge_blocked(*edge))
+                        settle_effects(self.view, self.game)
                         self.view.draw_walls(self.game)
-                        self.assertEqual(tuple(self.view.screen.get_at(point))[:3],
-                                         self.view.player_colors[0])
+                        assert_wood_color(self, self.view.screen.get_at(point), self.view.player_colors[0])
 
 
 if __name__ == "__main__":

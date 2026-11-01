@@ -3,6 +3,10 @@ from pathlib import Path
 
 import pygame
 
+from ui.presentation import GamePresentation
+from ui.sound_effects import SoundEffects
+from ui.wood_theme import WoodTheme, shade
+
 
 # Vẽ giao diện; luật chơi được xử lý trong Game.
 class GameView:
@@ -22,6 +26,11 @@ class GameView:
         self.title_font.set_bold(True)
         self.font = pygame.font.Font(font_path, 22)
         self.small_font = pygame.font.Font(font_path, 17)
+        self.badge_font = pygame.font.Font(font_path, 13)
+        self.theme = WoodTheme()
+        self.motion = GamePresentation()
+        self.audio = SoundEffects()
+        self.board_surface = None
 
         # Mỗi ô rộng 58 pixel, khe giữa các ô rộng 8 pixel.
         self.board_x = 70
@@ -31,19 +40,62 @@ class GameView:
         self.cell_stride = self.cell_size + self.cell_gap
         self.board_extent = 9 * self.cell_size + 8 * self.cell_gap
 
-        self.background_color = (247, 241, 228)
-        self.board_frame_color = (198, 155, 98)
-        self.cell_colors = [(234, 220, 191), (218, 197, 160)]
-        # Giữ màu theo phe; số trên quân phụ thuộc lựa chọn đi trước/đi sau.
+        self.background_color = (237, 223, 200)
+        self.board_frame_color = (146, 101, 59)
+        self.cell_colors = [(235, 205, 163), (216, 180, 131)]
+        # Quân và tường nhuộm màu theo phe; không còn vẽ số trên quân.
         self.player_colors = [(46, 139, 87), (40, 120, 190)]
         self.move_hint_colors = [(85, 145, 90), self.player_colors[1]]
         self.wall_preview_colors = [(132, 204, 158), (133, 192, 235)]
         self.invalid_wall_color = (190, 65, 55)
-        self.text_color = (70, 52, 38)
+        self.text_color = self.theme.text_color
         self.restart_button_rect = pygame.Rect(700, 650, 250, 52)
         self.menu_button_rect = pygame.Rect(700, 720, 250, 52)
         self.undo_button_rect = pygame.Rect(700, 600, 120, 40)
         self.redo_button_rect = pygame.Rect(830, 600, 120, 40)
+        self.sound_button_rect = pygame.Rect(770, 32, 160, 48)
+        self.victory_restart_button_rect = pygame.Rect(140, 425, 200, 52)
+        self.victory_menu_button_rect = pygame.Rect(365, 425, 220, 52)
+
+    # Nền gỗ được cache; các màn hình chỉ blit lại, không tạo vân mỗi frame.
+    def draw_background(self):
+        self.screen.blit(self.theme.wood((self.width, self.height), self.background_color,
+                                        seed=41, radius=0), (0, 0))
+
+    # Dùng vùng nút thật đang hiển thị, kể cả khi có khung chiến thắng.
+    def restart_rect(self, game):
+        return self.victory_restart_button_rect if game.winner is not None else self.restart_button_rect
+
+    # Nút Về menu chuyển vào khung chiến thắng khi ván kết thúc.
+    def menu_rect(self, game):
+        return self.victory_menu_button_rect if game.winner is not None else self.menu_button_rect
+
+    # Phản hồi nhấn nút dùng chung; không tạo hoặc thực thi Command của ván.
+    def button_feedback(self, rect):
+        self.theme.press(rect)
+        self.audio.play("click")
+
+    # Cài đặt âm thanh có trên cả menu, hướng dẫn, trong ván và sau thắng.
+    def draw_sound_button(self):
+        label = "Âm thanh: Bật" if self.audio.enabled else "Âm thanh: Tắt"
+        self.theme.button(self.screen, self.sound_button_rect, label, self.small_font,
+                          enabled=self.audio.available)
+
+    # Reset chỉ xóa hình chuyển động, giữ cài đặt âm thanh trong phiên đang chạy.
+    def reset_effects(self, game):
+        self.motion.reset(game.board)
+
+    # Quan sát thay đổi sau Command thành công, không viết ngược vào luật hoặc lịch sử.
+    def present_action(self, game, before, kind="action"):
+        self.motion.record(game, before, kind)
+        if kind in ("undo", "redo"):
+            self.audio.play("undo")
+        elif len(game.board.walls) > len(before["walls"]):
+            self.audio.play("wall")
+        else:
+            self.audio.play("move")
+        if before["winner"] is None and game.winner is not None:
+            self.audio.play("win")
 
     # Vẽ chữ lên màn hình tại vị trí được chỉ định.
     def draw_text(self, text, font, color, x, y):
@@ -96,28 +148,22 @@ class GameView:
 
         return row, col
 
-    # Vẽ nền bàn và từng ô riêng lẻ để tạo khe giữa các ô.
+    # Tạo mặt bàn một lần: khung gỗ tối và các ô có vân khác nhau, giữ nguyên khe.
     def draw_board(self):
-        board_width = 9 * self.cell_size + 8 * self.cell_gap
-        board_height = 9 * self.cell_size + 8 * self.cell_gap
-
-        pygame.draw.rect(
-            self.screen,
-            self.board_frame_color,
-            (self.board_x - 6, self.board_y - 6, board_width + 12, board_height + 12),
-            border_radius=12,
-        )
-
-        for row in range(9):
-            for col in range(9):
-                color = self.cell_colors[(row + col) % 2]
-
-                pygame.draw.rect(
-                    self.screen,
-                    color,
-                    self.cell_rect(row, col),
-                    border_radius=6,
-                )
+        origin = (self.board_x - 18, self.board_y - 18)
+        if self.board_surface is None:
+            size = self.board_extent + 36
+            self.board_surface = pygame.Surface((size, size + 6), pygame.SRCALPHA)
+            self.theme.panel(self.board_surface, pygame.Rect(0, 0, size, size),
+                             self.board_frame_color, radius=18, seed=21)
+            for row in range(9):
+                for col in range(9):
+                    rect = self.cell_rect(row, col).move(-origin[0], -origin[1])
+                    color = self.cell_colors[(row + col) % 2]
+                    self.board_surface.blit(self.theme.wood(rect.size, color,
+                                                            seed=(row * 9 + col) % 7, radius=5), rect)
+                    pygame.draw.rect(self.board_surface, shade(color, 18), rect, 1, border_radius=5)
+        self.screen.blit(self.board_surface, origin)
 
     # Tô viền quân đang tới lượt và đánh dấu các ô có thể đi.
     def draw_move_hints(self, selected_position, legal_moves, player_index=0):
@@ -136,21 +182,15 @@ class GameView:
             center = self.cell_center(row, col)
             pygame.draw.circle(self.screen, self.move_hint_colors[player_index], center, 8)
 
-    # Vẽ quân cờ tại vị trí hiện tại của mỗi người chơi.
+    # Vẽ đĩa gỗ không số tại điểm nội suy; màu và vòng sáng xác định phe/lượt.
     def draw_players(self, game):
+        if self.motion.board is not game.board:
+            self.motion.reset(game.board)
         for index, player in enumerate(game.players):
-            center = self.cell_center(player.row, player.col)
-
-            pygame.draw.circle(
-                self.screen,
-                self.player_colors[index],
-                center,
-                22,
-            )
-            pygame.draw.circle(self.screen, (255, 255, 255), center, 22, 3)
-
-            number = self.small_font.render(str(game.player_number(index)), True, (255, 255, 255))
-            self.screen.blit(number, number.get_rect(center=center))
+            row, col = self.motion.position(index, player.position)
+            center = self.cell_center(row, col)
+            self.theme.pawn(self.screen, center, self.player_colors[index],
+                            active=game.winner is None and game.current_turn == index)
 
     # Vẽ lượt chơi, tên và số tường; không hiển thị tọa độ nội bộ.
     def draw_info(self, game):
@@ -167,6 +207,11 @@ class GameView:
 
         for index, player in enumerate(game.players):
             y = 250 + index * 145
+            card = pygame.Rect(690, y - 12, 295, 118)
+            self.theme.panel(self.screen, card, (244, 231, 207), radius=12, seed=5, shadow=False)
+            if index == game.current_turn and game.winner is None:
+                pygame.draw.rect(self.screen, self.player_colors[index], card, 3, border_radius=12)
+                self.draw_text("ĐANG ĐI", self.badge_font, self.player_colors[index], 903, y + 6)
             self.draw_text(
                 player.name,
                 self.font,
@@ -196,26 +241,15 @@ class GameView:
 
         self.draw_text(game.notice, self.small_font, self.text_color, 70, 735)
 
-    # Vẽ Chơi lại và Về menu cả khi đang chơi lẫn sau khi ván kết thúc.
+    # Vẽ hai nút điều hướng ở cạnh phải khi đang chơi; sau thắng dùng khung riêng.
     def draw_navigation_buttons(self):
         for rect, text in ((self.restart_button_rect, "Chơi lại"),
                            (self.menu_button_rect, "Về menu")):
-            hovered = rect.collidepoint(pygame.mouse.get_pos())
-            color = (222, 198, 155) if hovered else (234, 220, 191)
-            pygame.draw.rect(self.screen, color, rect, border_radius=8)
-            pygame.draw.rect(self.screen, self.text_color, rect, width=2, border_radius=8)
-            label = self.font.render(text, True, self.text_color)
-            self.screen.blit(label, label.get_rect(center=rect.center))
+            self.theme.button(self.screen, rect, text, self.font)
 
     # Vẽ nút lịch sử, làm mờ khi không có hành động tương ứng.
     def draw_history_button(self, rect, text, enabled):
-        hovered = enabled and rect.collidepoint(pygame.mouse.get_pos())
-        color = (222, 198, 155) if hovered else (234, 220, 191)
-        text_color = self.text_color if enabled else (153, 145, 130)
-        pygame.draw.rect(self.screen, color, rect, border_radius=8)
-        pygame.draw.rect(self.screen, text_color, rect, width=2, border_radius=8)
-        label = self.font.render(text, True, text_color)
-        self.screen.blit(label, label.get_rect(center=rect.center))
+        self.theme.button(self.screen, rect, text, self.font, enabled)
 
     # Chỉ hiện Undo khi đấu bot; giữ hàm riêng để kiểm tra trạng thái nút.
     def draw_undo_button(self, enabled):
@@ -225,9 +259,30 @@ class GameView:
     def draw_redo_button(self, enabled):
         self.draw_history_button(self.redo_button_rect, "Redo", enabled)
 
+    # Khung thắng phủ phần bàn; Undo/Redo ở cạnh phải vẫn dùng được khi đấu bot.
+    def draw_victory(self, game):
+        veil = pygame.Surface((self.board_extent + 36, self.board_extent + 36), pygame.SRCALPHA)
+        veil.fill((49, 34, 23, 120))
+        self.screen.blit(veil, (self.board_x - 18, self.board_y - 18))
+        panel = pygame.Rect(105, 270, 516, 258)
+        self.theme.panel(self.screen, panel, (244, 225, 190), radius=20, seed=31)
+        color = self.player_colors[game.players.index(game.winner)]
+        title = self.title_font.render("Chiến thắng!", True, self.text_color)
+        self.screen.blit(title, title.get_rect(center=(363, 320)))
+        name = self.font.render(game.winner.name, True, color)
+        self.screen.blit(name, name.get_rect(center=(363, 375)))
+        self.theme.pawn(self.screen, (153, 365), color)
+        self.theme.pawn(self.screen, (573, 365), color)
+        self.theme.button(self.screen, self.victory_restart_button_rect, "Chơi lại", self.font)
+        self.theme.button(self.screen, self.victory_menu_button_rect, "Về menu", self.font)
+
     # Vẽ toàn bộ giao diện theo trạng thái ván chơi hiện tại.
     def draw(self, game, selected_position=None, wall_preview=None):
-        self.screen.fill(self.background_color)
+        if self.motion.board is not game.board:
+            self.motion.reset(game.board)
+        self.draw_background()
+        self.theme.panel(self.screen, pygame.Rect(680, 105, 325, 680),
+                         (238, 219, 185), radius=18, seed=19)
 
         self.draw_board()
         self.draw_walls(game)
@@ -253,7 +308,11 @@ class GameView:
         if game.mode == "bot":
             self.draw_undo_button(game.can_undo)
             self.draw_redo_button(game.can_redo)
-        self.draw_navigation_buttons()
+        if game.winner is None:
+            self.draw_navigation_buttons()
+        else:
+            self.draw_victory(game)
+        self.draw_sound_button()
         pygame.display.flip()
 
     # Chọn khe ngang/dọc gần chuột nhất; giao điểm bằng nhau không tự chọn hướng.
@@ -328,18 +387,13 @@ class GameView:
         rect.y = self.board_y + self.board_extent - (rect.y - self.board_y) - rect.height
         return rect
 
-    # Vẽ những bức tường đã được đặt trên bàn cờ.
+    # Tường nhuộm màu có vân; chỉ tường mới đặt được tăng độ đậm ngắn.
     def draw_walls(self, game):
         for orientation, row, col in game.board.walls:
             owner = game.wall_owners.get((orientation, row, col))
             wall_color = self.player_colors[owner] if owner is not None else (112, 62, 39)
             wall_rect = self._wall_rect(orientation, row, col)
-            pygame.draw.rect(
-                self.screen,
-                wall_color,
-                wall_rect,
-                border_radius=3,
-            )
+            self.theme.wall(self.screen, wall_rect, wall_color, self.motion.wall_alpha((orientation, row, col)))
 
     # Tường hợp lệ dùng màu phe nhạt hơn; tường không hợp lệ luôn màu đỏ.
     def draw_wall_preview(self, wall_preview, player_index=0):
@@ -354,9 +408,4 @@ class GameView:
         else:
             color = self.invalid_wall_color
 
-        pygame.draw.rect(
-            self.screen,
-            color,
-            wall_rect,
-            border_radius=3,
-        )
+        self.theme.wall(self.screen, wall_rect, color)

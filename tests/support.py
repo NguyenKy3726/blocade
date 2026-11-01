@@ -17,3 +17,14 @@ def start_game(app, menu, mode="bot", level="easy", human_first=True):
     for events in menu_frames(menu, mode, level, human_first):
         running = app.handle_event(events[0])
     return running
+
+
+# Test pixel kiểm tra hình hoàn tất; test animation dùng đồng hồ giả riêng.
+def settle_effects(view, game):
+    view.motion.reset(game.board)
+
+
+# Vân gỗ làm độ sáng biến thiên nhẹ, nhưng phải giữ đúng màu phe/xem trước.
+def assert_wood_color(test, pixel, expected):
+    for actual, base in zip(tuple(pixel)[:3], expected):
+        test.assertLessEqual(abs(actual - base), 15)

@@ -28,20 +28,12 @@ class MenuView:
 
     # Vẽ nhãn giữa nút và đổi nền khi chuột trỏ vào.
     def draw_button(self, rect, text):
-        hovered = rect.collidepoint(pygame.mouse.get_pos())
-        color = (222, 198, 155) if hovered else (234, 220, 191)
-        pygame.draw.rect(self.view.screen, color, rect, border_radius=8)
-        pygame.draw.rect(self.view.screen, self.view.text_color, rect, width=2, border_radius=8)
-        label = self.view.font.render(text, True, self.view.text_color)
-        self.view.screen.blit(label, label.get_rect(center=rect.center))
+        self.view.theme.button(self.view.screen, rect, text, self.view.font)
 
     # Vẽ mũi tên bằng nét Pygame để icon không cần thêm ảnh hoặc font ký hiệu.
     def draw_back_button(self):
         rect = self.back_button_rect
-        hovered = rect.collidepoint(pygame.mouse.get_pos())
-        color = (222, 198, 155) if hovered else (234, 220, 191)
-        pygame.draw.rect(self.view.screen, color, rect, border_radius=8)
-        pygame.draw.rect(self.view.screen, self.view.text_color, rect, width=2, border_radius=8)
+        rect = self.view.theme.button(self.view.screen, rect, "", self.view.small_font)
         x, y = rect.x + 20, rect.centery
         pygame.draw.line(self.view.screen, self.view.text_color, (x, y), (x + 20, y), 3)
         pygame.draw.lines(self.view.screen, self.view.text_color, False,
@@ -51,14 +43,7 @@ class MenuView:
 
     # Nút dấu hỏi ở góc trên menu chính mở trang luật và cách thao tác.
     def draw_help_button(self):
-        rect = self.help_button_rect
-        hovered = rect.collidepoint(pygame.mouse.get_pos())
-        color = (222, 198, 155) if hovered else (234, 220, 191)
-        pygame.draw.circle(self.view.screen, color, rect.center, rect.width // 2)
-        pygame.draw.circle(self.view.screen, self.view.text_color, rect.center,
-                           rect.width // 2, width=2)
-        label = self.view.title_font.render("?", True, self.view.text_color)
-        self.view.screen.blit(label, label.get_rect(center=rect.center))
+        self.view.theme.button(self.view.screen, self.help_button_rect, "?", self.view.title_font)
 
     # Chia nội dung theo độ rộng thực của font để tiếng Việt không tràn cột.
     def draw_help_section(self, title, paragraphs, x, y, width):
@@ -80,7 +65,11 @@ class MenuView:
 
     # Luật và thao tác chỉ xuất hiện ở trang này, không phủ chữ lên bàn cờ.
     def draw_help(self):
-        self.view.screen.fill(self.view.background_color)
+        self.view.draw_background()
+        self.view.theme.panel(self.view.screen, pygame.Rect(40, 170, 475, 590),
+                               (247, 237, 216), seed=12)
+        self.view.theme.panel(self.view.screen, pygame.Rect(530, 170, 480, 590),
+                               (247, 237, 216), seed=15)
         self.draw_back_button()
         title = self.view.title_font.render("HƯỚNG DẪN", True, self.view.text_color)
         self.view.screen.blit(title, title.get_rect(center=(525, 112)))
@@ -96,11 +85,13 @@ class MenuView:
             "Các ô có thể đi được đánh dấu sẵn. Click trái vào ô đích, không cần chọn quân.",
             "Đưa chuột vào khe ngang/dọc để xem trước tường, click trái để đặt. Ở giao điểm, dịch vào khe muốn chọn.",
             "Gợi ý tường hợp lệ có màu phe nhạt hơn; không hợp lệ màu đỏ. Tường đã đặt mang màu phe sở hữu.",
-            "Hai người: số 1 đi trước, mỗi lượt 30 giây. Hết giờ chỉ mất lượt, không thua ngay.",
-            "Đấu máy: chọn cấp và chơi trước/sau. Bạn ở dưới, số 1 đi trước; không có đồng hồ.",
+            "Hai người: xanh lá đi trước, mỗi lượt 30 giây. Hết giờ chỉ mất lượt, không thua ngay.",
+            "Đấu máy: chọn cấp và chơi trước/sau. Bạn xanh lá ở dưới; không có đồng hồ.",
             "Undo/Redo chỉ khi đấu máy, lùi/làm lại cặp lượt của bạn và bot. Nếu bạn chơi sau, giữ nước bot mở đầu.",
             "Chơi lại bắt đầu ván mới. Về menu chọn lại chế độ; nút X đóng game.",
+            "Nút Âm thanh ở phía trên để bật/tắt tiếng.",
         ], 550, 190, 440)
+        self.view.draw_sound_button()
         pygame.display.flip()
 
     # Hai người vào ván ngay; chỉ đấu bot cần các trang chọn cấp và lượt.
@@ -108,7 +99,9 @@ class MenuView:
         if page == "help":
             self.draw_help()
             return
-        self.view.screen.fill(self.view.background_color)
+        self.view.draw_background()
+        self.view.theme.panel(self.view.screen, pygame.Rect(300, 175, 450, 490),
+                               (238, 217, 181), radius=22, seed=28)
         titles = {"main": "BLOCADE", "levels": "ĐẤU VỚI MÁY", "order": "CHỌN LƯỢT CHƠI"}
         title = self.view.title_font.render(titles[page], True, self.view.text_color)
         self.view.screen.blit(title, title.get_rect(center=(525, 225)))
@@ -125,4 +118,8 @@ class MenuView:
             self.draw_back_button()
         for rect, text in buttons:
             self.draw_button(rect, text)
+        if page == "main":
+            for center, color in zip(((490, 570), (560, 570)), self.view.player_colors):
+                self.view.theme.pawn(self.view.screen, center, color)
+        self.view.draw_sound_button()
         pygame.display.flip()

@@ -11,7 +11,7 @@ import pygame
 
 from game.game import Game
 from game.commands import MoveCommand, PlaceWallCommand
-from tests.support import menu_frames
+from tests.support import menu_frames, settle_effects, assert_wood_color
 from ui.controller import GameController
 from ui.game_view import GameView
 from ui.menu_view import MenuView
@@ -162,10 +162,11 @@ class MouseTests(unittest.TestCase):
         self.assertEqual(self.game.current_turn, 1)
         self.click(vertical)
         self.assertEqual(self.game.current_turn, 0)
+        settle_effects(self.view, self.game)
         self.view.draw(self.game)
         for wall, owner in self.game.wall_owners.items():
             pixel = self.view.screen.get_at(self.view._wall_rect(*wall).center)
-            self.assertEqual(tuple(pixel)[:3], self.view.player_colors[owner])
+            assert_wood_color(self, pixel, self.view.player_colors[owner])
 
     # Giao điểm chọn theo khoảng cách; ngoài bàn không được nhận làm tường.
     def test_intersections_and_edges(self):
@@ -196,15 +197,16 @@ class MouseTests(unittest.TestCase):
             self.game.current_turn = turn
             self.view.draw(self.game, wall_preview=(*wall, True))
             pixel = tuple(self.view.screen.get_at(center))[:3]
-            self.assertEqual(pixel, self.view.wall_preview_colors[turn])
+            assert_wood_color(self, pixel, self.view.wall_preview_colors[turn])
             self.assertTrue(all(light > base for light, base in
                                 zip(pixel, self.view.player_colors[turn])))
             self.view.draw(self.game, wall_preview=(*wall, False))
-            self.assertEqual(tuple(self.view.screen.get_at(center))[:3], (190, 65, 55))
+            assert_wood_color(self, self.view.screen.get_at(center), (190, 65, 55))
 
     # Kiểm tra các chấm gợi ý thật sự được vẽ mà không có quân được chọn.
     def assert_visible_moves(self):
         self.assertIsNone(self.controller.selected_position)
+        settle_effects(self.view, self.game)
         self.view.draw(self.game)
         for row, col in self.game.get_legal_moves():
             center = self.position(col * 66 + 29, row * 66 + 29)
@@ -265,7 +267,7 @@ class MouseTests(unittest.TestCase):
         self.controller.selected_position = (0, 4)
         self.clock.now += 12
         self.controller.update()
-        self.click(self.view.restart_button_rect.center)
+        self.click(self.view.restart_rect(self.game).center)
         self.assert_restarted()
         self.clock.now += 3
         self.controller.update()
@@ -284,7 +286,7 @@ class MouseTests(unittest.TestCase):
                     self.assertTrue(self.game.move_current_player((8, 4)))
                 self.clock.now += 30
                 self.view.draw(self.game)
-                rect = self.view.restart_button_rect
+                rect = self.view.restart_rect(self.game)
                 self.assertNotEqual(tuple(self.view.screen.get_at((rect.left + 10, rect.top + 10)))[:3],
                                     self.view.background_color)
                 self.click(rect.center)
@@ -295,7 +297,7 @@ class MouseTests(unittest.TestCase):
     # Chỉ click trái bên trong nút mới chơi lại; ngoài nút hoặc chuột phải không reset.
     def test_restart_button_hit_area(self):
         self.assertTrue(self.game.move_current_player((1, 4)))
-        rect = self.view.restart_button_rect
+        rect = self.view.restart_rect(self.game)
         self.controller.handle_event(pygame.event.Event(
             pygame.MOUSEBUTTONDOWN, button=3, pos=rect.center))
         self.click((rect.right, rect.bottom))
@@ -307,7 +309,7 @@ class MouseTests(unittest.TestCase):
         self.assertTrue(self.game.place_wall_current_player("horizontal", 2, 2))
         self.clock.now += 30
         restart = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                     pos=self.view.restart_button_rect.center)
+                                     pos=self.view.restart_rect(self.game).center)
         old_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                        pos=self.position(20, 62))
         quit_event = pygame.event.Event(pygame.QUIT)

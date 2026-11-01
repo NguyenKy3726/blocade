@@ -245,7 +245,7 @@ class UndoFlowTests(unittest.TestCase):
     def test_button_after_either_winner(self):
         for winner in (0, 1):
             with self.subTest(winner=winner):
-                self.click(self.view.restart_button_rect.center)
+                self.click(self.view.restart_rect(self.game).center)
                 if winner == 0:
                     self.game.players[0].row = 7
                     self.game.players[1].col = 0
@@ -268,11 +268,11 @@ class UndoFlowTests(unittest.TestCase):
     def test_history_cleared_on_restart_and_menu(self):
         self.first_move()
         self.app.update_bot()
-        self.click(self.view.restart_button_rect.center)
+        self.click(self.view.restart_rect(self.game).center)
         self.assertEqual(self.game.command_history, [])
         self.first_move()
         self.app.update_bot()
-        self.click(self.view.menu_button_rect.center)
+        self.click(self.view.menu_rect(self.game).center)
         self.assertEqual(self.game.command_history, [])
         start_game(self.app, self.menu, mode="two_players", level="easy")
         self.assertFalse(self.game.can_undo)

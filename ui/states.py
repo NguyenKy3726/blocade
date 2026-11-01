@@ -95,7 +95,7 @@ class TurnOrderState(MenuState):
     def __init__(self, bot_level):
         self.bot_level = bot_level
 
-    # Bên dưới chơi trước mang số 1, chơi sau mang số 2; bot có thể mở đầu.
+    # Người/xanh lá luôn ở dưới; chọn chơi sau thì bot mở đầu.
     def handle_event(self, app, event):
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return True
@@ -123,10 +123,11 @@ class PlayingState(AppState):
     def handle_event(self, app, event):
         controller = app.game_controller
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
-                and controller.view.menu_button_rect.collidepoint(event.pos)):
+                and controller.view.menu_rect(controller.game).collidepoint(event.pos)):
             controller.selected_position = None
             controller.game.command_history.clear()
             controller.game.redo_history.clear()
+            controller.view.reset_effects(controller.game)
             app.change_state(MenuState())
             return True
         return controller.handle_event(event)

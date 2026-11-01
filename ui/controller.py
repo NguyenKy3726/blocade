@@ -29,7 +29,7 @@ class GameController:
         return (
             event.type == pygame.MOUSEBUTTONDOWN
             and event.button == 1
-            and self.view.restart_button_rect.collidepoint(event.pos)
+            and self.view.restart_rect(self.game).collidepoint(event.pos)
         )
 
     # Undo nhận trước khi chặn click lượt bot hoặc ván kết thúc.
@@ -58,13 +58,25 @@ class GameController:
         if self.game.bot_level != previous_level:
             self.bot_strategy = BotStrategyFactory.create(self.game.bot_level)
         self.selected_position = None
+        self.view.reset_effects(self.game)
 
     # Cập nhật đồng hồ và bỏ lựa chọn cũ khi người chơi bị mất lượt.
     def update(self):
         expired = self.game.update_time()
         if expired:
             self.selected_position = None
+            self.view.audio.play("timeout")
         return expired
+
+    # Chỉ sau Command thành công mới phát âm và tạo hình chuyển động.
+    def execute_command(self, command):
+        if command is None:
+            return False
+        before = self.game.capture_state()
+        if not command.execute():
+            return False
+        self.view.present_action(self.game, before)
+        return True
 
     # Bot khó dùng khoảng 8ms mỗi khung hình; các cấp khác giữ cách chạy trực tiếp.
     def play_bot_turn(self):
@@ -78,7 +90,7 @@ class GameController:
             self.search_board = self.game.board
             if self.pending_search is None:
                 command = self.bot_strategy.choose_command(self.game)
-                return command.execute() if command is not None else False
+                return self.execute_command(command)
         started = perf_counter()
         while True:
             try:
@@ -88,7 +100,7 @@ class GameController:
                 return False
             if command is not None:
                 self.cancel_search()
-                return command.execute()
+                return self.execute_command(command)
             if perf_counter() - started >= 0.008:
                 return False
 
@@ -105,13 +117,17 @@ class GameController:
 
         if self.is_undo_event(event):
             self.cancel_search()
-            self.game.undo_round()
+            before = self.game.capture_state()
+            if self.game.undo_round():
+                self.view.present_action(self.game, before, "undo")
             self.selected_position = None
             return True
 
         if self.is_redo_event(event):
             self.cancel_search()
-            self.game.redo_round()
+            before = self.game.capture_state()
+            if self.game.redo_round():
+                self.view.present_action(self.game, before, "redo")
             self.selected_position = None
             return True
 
@@ -134,7 +150,7 @@ class GameController:
         clicked_cell = self.view.cell_at_position(mouse_position)
         if clicked_cell is not None:
             command = MoveCommand(self.game, clicked_cell)
-            command.execute()
+            self.execute_command(command)
         self.selected_position = None
 
     # Xác nhận đặt tường bằng chuột; chỉ thành công mới chuyển lượt.
@@ -145,7 +161,7 @@ class GameController:
         if wall is None:
             return
         command = PlaceWallCommand(self.game, *wall)
-        command.execute()
+        self.execute_command(command)
         self.selected_position = None
 
     # Xem trước cả hai hướng bằng chuột, không làm thay đổi trạng thái ván.

@@ -274,8 +274,8 @@ class HardFlowTests(unittest.TestCase):
         for target in ("restart", "menu"):
             self.first_move()
             search = self.begin_partial_search()
-            self.click(self.view.restart_button_rect.center if target == "restart"
-                       else self.view.menu_button_rect.center)
+            self.click(self.view.restart_rect(self.game).center if target == "restart"
+                       else self.view.menu_rect(self.game).center)
             self.assertEqual(inspect.getgeneratorstate(search), inspect.GEN_CLOSED)
             self.assertIsNone(self.controller.pending_search)
             self.assertFalse(self.app.update_bot())
@@ -289,7 +289,7 @@ class HardFlowTests(unittest.TestCase):
         start_game(self.app, self.menu, mode="bot", level="medium")
         self.assertEqual(self.game.bot_level, "medium")
         self.assertIsInstance(self.app.state, HumanTurnState)
-        self.click(self.view.menu_button_rect.center)
+        self.click(self.view.menu_rect(self.game).center)
         start_game(self.app, self.menu, mode="two_players", level="easy")
         self.now += 30
         self.assertTrue(self.app.update())

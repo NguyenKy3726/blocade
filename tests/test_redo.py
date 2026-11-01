@@ -259,9 +259,9 @@ class RedoFlowTests(unittest.TestCase):
             self.click(self.view.undo_button_rect.center)
             self.assertTrue(self.game.can_redo)
             if target == "restart":
-                self.click(self.view.restart_button_rect.center)
+                self.click(self.view.restart_rect(self.game).center)
             else:
-                self.click(self.view.menu_button_rect.center)
+                self.click(self.view.menu_rect(self.game).center)
                 self.assertEqual(self.game.redo_history, [])
                 start_game(self.app, self.menu, mode="two_players", level="easy")
             self.assertEqual(self.game.redo_history, [])

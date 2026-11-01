@@ -57,10 +57,25 @@ class AppController:
             rects = self.menu_view.navigation_rects(self.state.page)
         else:
             view = self.game_controller.view
-            rects = (view.restart_button_rect, view.menu_button_rect)
+            game = self.game_controller.game
+            rects = (view.restart_rect(game), view.menu_rect(game))
             if self.game_controller.game.mode == "bot":
                 rects += (view.undo_button_rect, view.redo_button_rect)
-        return any(rect.collidepoint(event.pos) for rect in rects)
+        return any(rect.collidepoint(event.pos) for rect in
+                   (*rects, self.game_controller.view.sound_button_rect))
+
+    # Chỉ nút đang hiển thị và đang bật mới nhận phản hồi nhấn/âm click.
+    def feedback_rects(self):
+        controller = self.game_controller
+        game, view = controller.game, controller.view
+        if self.screen == "menu":
+            return self.menu_view.navigation_rects(self.state.page)
+        rects = [view.restart_rect(game), view.menu_rect(game)]
+        if game.can_undo:
+            rects.append(view.undo_button_rect)
+        if game.can_redo:
+            rects.append(view.redo_button_rect)
+        return rects
 
     # Đóng cửa sổ luôn được ưu tiên, kể cả khi bot đang tìm kiếm.
     def handle_event(self, event):
@@ -68,6 +83,16 @@ class AppController:
             self.game_controller.cancel_search()
             return False
         self.sync_state()
+        view = self.game_controller.view
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if view.sound_button_rect.collidepoint(event.pos):
+                view.theme.press(view.sound_button_rect)
+                view.audio.toggle()
+                return True
+            for rect in self.feedback_rects():
+                if rect.collidepoint(event.pos):
+                    view.button_feedback(rect)
+                    break
         running = self.state.handle_event(self, event)
         self.sync_state()
         return running

@@ -16,7 +16,7 @@ from game.bot.strategy_factory import BotStrategyFactory
 from game.commands import MoveCommand, PlaceWallCommand
 from game.game import Game
 from game.pathfinder import PathFinder
-from tests.support import start_game
+from tests.support import start_game, settle_effects, assert_wood_color
 from ui.app_controller import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -199,7 +199,7 @@ class MediumFlowTests(unittest.TestCase):
         self.assertEqual(self.game.players[1].name, "Bot trung bình")
         self.assertIsInstance(self.controller.bot_strategy, MediumStrategy)
         self.assertFalse(self.game.timer_enabled)
-        self.click(self.view.restart_button_rect.center)
+        self.click(self.view.restart_rect(self.game).center)
         self.assertEqual(self.game.bot_level, "medium")
         self.assertIsInstance(self.controller.bot_strategy, MediumStrategy)
         with patch.object(self.view, "draw_text", wraps=self.view.draw_text) as text:
@@ -207,11 +207,11 @@ class MediumFlowTests(unittest.TestCase):
             labels = [call.args[0] for call in text.call_args_list]
             self.assertIn("Đấu bot trung bình", labels)
             self.assertFalse(any(label.startswith("Lượt:") for label in labels))
-        self.click(self.view.menu_button_rect.center)
+        self.click(self.view.menu_rect(self.game).center)
         start_game(self.app, self.menu, mode="bot", level="easy")
         self.assertEqual(self.game.bot_level, "easy")
         self.assertIsInstance(self.controller.bot_strategy, EasyStrategy)
-        self.click(self.view.menu_button_rect.center)
+        self.click(self.view.menu_rect(self.game).center)
         start_game(self.app, self.menu, mode="two_players", level="easy")
         self.assertTrue(self.game.timer_enabled)
         self.assertFalse(self.app.update_bot())
@@ -227,11 +227,12 @@ class MediumFlowTests(unittest.TestCase):
         self.assertIsInstance(self.game.command_history[-1], PlaceWallCommand)
         self.assertEqual(self.game.players[1].walls_remaining, 9)
         after = self.game.capture_state()
+        settle_effects(self.view, self.game)
         self.app.draw()
         for wall, owner in self.game.wall_owners.items():
             self.assertEqual(owner, 1)
-            self.assertEqual(tuple(self.view.screen.get_at(self.view._wall_rect(*wall).center))[:3],
-                             self.view.player_colors[1])
+            assert_wood_color(self, self.view.screen.get_at(self.view._wall_rect(*wall).center),
+                              self.view.player_colors[1])
         self.click(self.view.undo_button_rect.center)
         self.assertEqual(self.game.capture_state(), before)
         with patch.object(self.controller.bot_strategy, "choose_command") as choose:
