@@ -7,11 +7,11 @@ def menu_frames(menu, mode="bot", level="easy", human_first=True):
     if mode == "bot":
         rects.append({"easy": menu.bot_button_rect, "medium": menu.medium_bot_button_rect,
                       "hard": menu.hard_bot_button_rect}[level])
-    rects.append(menu.first_button_rect if human_first else menu.second_button_rect)
+        rects.append(menu.first_button_rect if human_first else menu.second_button_rect)
     return [[pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=rect.center)] for rect in rects]
 
 
-# Dùng trong test luồng chơi; đi qua đủ các trang thay vì bỏ qua chọn lượt.
+# Dùng luồng menu thật: hai người vào ngay, đấu bot đi qua chọn cấp/lượt.
 def start_game(app, menu, mode="bot", level="easy", human_first=True):
     running = True
     for events in menu_frames(menu, mode, level, human_first):

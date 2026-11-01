@@ -15,7 +15,7 @@ from ui.app_controller import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
 from ui.menu_view import MenuView
-from ui.states import BotLevelState, BotTurnState, HumanTurnState, MenuState, TurnOrderState
+from ui.states import BotLevelState, BotTurnState, HelpState, HumanTurnState, MenuState, TurnOrderState
 
 
 # Kiểm tra font, các trang menu và chơi trước/sau qua giao diện thật headless.
@@ -62,13 +62,13 @@ class MenuSetupTests(unittest.TestCase):
         with patch.object(self.menu, "draw_button", wraps=self.menu.draw_button) as draw:
             self.app.draw()
             self.assertEqual([call.args[1] for call in draw.call_args_list],
-                             ["Hai người chơi", "Đấu với máy", "Thoát"])
+                             ["Hai người chơi", "Đấu với máy"])
         self.click(self.menu.versus_bot_button_rect)
         self.assertIsInstance(self.app.state, BotLevelState)
         with patch.object(self.menu, "draw_button", wraps=self.menu.draw_button) as draw:
             self.app.draw()
             self.assertEqual([call.args[1] for call in draw.call_args_list],
-                             ["Dễ", "Trung bình", "Khó", "Quay lại"])
+                             ["Dễ", "Trung bình", "Khó"])
         self.click(self.menu.medium_bot_button_rect)
         self.assertIsInstance(self.app.state, TurnOrderState)
         self.assertEqual(self.app.state.bot_level, "medium")
@@ -85,7 +85,7 @@ class MenuSetupTests(unittest.TestCase):
         self.click(self.menu.hard_bot_button_rect)
         order_state = self.app.state
         event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                   pos=self.menu.exit_button_rect.center)
+                                   pos=self.menu.hard_bot_button_rect.center)
         self.assertFalse(self.app.is_navigation_event(event))
         self.assertTrue(self.app.handle_event(event))
         self.assertIs(self.app.state, order_state)
@@ -94,9 +94,8 @@ class MenuSetupTests(unittest.TestCase):
         self.click(self.menu.back_button_rect)
         self.assertIs(type(self.app.state), MenuState)
         self.click(self.menu.start_button_rect)
-        self.assertIsInstance(self.app.state, TurnOrderState)
-        self.click(self.menu.back_button_rect)
-        self.assertIs(type(self.app.state), MenuState)
+        self.assertIsInstance(self.app.state, HumanTurnState)
+        self.assertEqual(self.game.mode, "two_players")
 
     # Cả ba cấp đều cho người ở dưới và bot mở đầu nếu người chọn chơi sau.
     def test_all_bot_levels_and_both_turn_orders(self):
@@ -141,18 +140,91 @@ class MenuSetupTests(unittest.TestCase):
                 self.assertEqual(sum(label == "Tường còn lại: 10" for label in labels), 2)
                 self.assertFalse(any(label.startswith(("Vị trí:", "Lượt:")) for label in labels))
 
-    # Hai người vẫn đếm đúng đồng hồ của bên số 1 khi bên dưới chọn chơi sau.
-    def test_two_player_second_starts_correct_clock(self):
-        start_game(self.app, self.menu, mode="two_players", human_first=False)
-        self.assertEqual([p.name for p in self.game.players], ["Người chơi 2", "Người chơi 1"])
-        self.assertEqual(self.game.current_turn, 1)
+    # Chuyển từ đấu bot chơi sau sang hai người: vào ngay và đặt lại số 1 đi trước.
+    def test_two_players_start_directly_with_correct_clock(self):
+        start_game(self.app, self.menu, human_first=False)
+        self.click(self.view.menu_button_rect)
+        self.now += 100
+        self.click(self.menu.start_button_rect)
+        self.assertIsInstance(self.app.state, HumanTurnState)
+        self.assertEqual([p.name for p in self.game.players], ["Người chơi 1", "Người chơi 2"])
+        self.assertEqual(self.game.current_turn, 0)
+        self.assertTrue(self.game.human_first)
+        self.assertEqual(self.game.turn_started_at, self.now)
         self.now += 5
         self.app.update()
-        self.assertEqual(self.game.time_remaining, [30, 25])
+        self.assertEqual(self.game.time_remaining, [25, 30])
         self.now += 25
         self.assertTrue(self.app.update())
-        self.assertEqual(self.game.current_turn, 0)
+        self.assertEqual(self.game.current_turn, 1)
         self.assertIsNone(self.game.winner)
+
+    # Đọc hướng dẫn không chạy đồng hồ/bot, không nhận click vào nút các trang khác.
+    def test_help_does_not_run_game_and_returns_to_main(self):
+        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=3,
+                                   pos=self.menu.help_button_rect.center)
+        self.app.handle_event(event)
+        self.assertIs(type(self.app.state), MenuState)
+        event.button = 1
+        self.assertTrue(self.app.is_navigation_event(event))
+        self.app.handle_event(event)
+        self.assertIsInstance(self.app.state, HelpState)
+        before = self.game.capture_state()
+        self.now += 300
+        self.assertFalse(self.app.update())
+        self.assertFalse(self.app.update_bot())
+        self.click(self.menu.start_button_rect)
+        self.assertIsInstance(self.app.state, HelpState)
+        self.assertEqual(self.game.capture_state(), before)
+        self.app.draw()
+        self.click(self.menu.back_button_rect)
+        self.assertIs(type(self.app.state), MenuState)
+        self.click(self.menu.start_button_rect)
+        self.assertEqual(self.game.turn_started_at, self.now)
+
+    # Hướng dẫn đủ luật/thao tác và mọi dòng nằm gọn trong cửa sổ, không cắt chữ.
+    def test_help_content_fits_window(self):
+        self.click(self.menu.help_button_rect)
+        with patch.object(self.view, "draw_text", wraps=self.view.draw_text) as text:
+            self.app.draw()
+        content = " ".join(call.args[0] for call in text.call_args_list)
+        for phrase in ("9×9", "10 tường", "nhảy thẳng", "đi chéo", "khóa hết đường",
+                       "click trái để đặt", "30 giây", "Undo/Redo", "nút X"):
+            self.assertIn(phrase, content)
+        for call in text.call_args_list:
+            label, font, _, x, y = call.args
+            width, height = font.size(label)
+            self.assertLessEqual(x + width, self.view.width - 40)
+            self.assertLessEqual(y + height, self.view.height - 20)
+            if x == 60:
+                self.assertLessEqual(x + width, 500)
+
+    # Nút quay lại ở đầu trang cấp/lượt/hướng dẫn, cùng một icon và vùng click.
+    def test_back_button_at_top_of_each_subpage_and_close(self):
+        self.assertLess(self.menu.back_button_rect.bottom, 100)
+        for page in ("levels", "order", "help"):
+            with self.subTest(page=page):
+                with patch.object(self.menu, "draw_back_button",
+                                  wraps=self.menu.draw_back_button) as back:
+                    self.menu.draw(page)
+                    back.assert_called_once()
+                self.assertIn(self.menu.back_button_rect, self.menu.navigation_rects(page))
+        self.click(self.menu.help_button_rect)
+        self.assertFalse(self.app.handle_event(pygame.event.Event(pygame.QUIT)))
+
+    # Bàn cờ giữ trạng thái động và màu xem trước, không còn các câu chỉ thao tác.
+    def test_board_has_no_static_instructions(self):
+        for mode in ("two_players", "bot"):
+            self.game.reset(mode=mode)
+            for preview in (None, ("horizontal", 2, 2, True)):
+                with patch.object(self.view, "draw_text", wraps=self.view.draw_text) as text:
+                    self.view.draw(self.game, wall_preview=preview)
+                labels = [call.args[0] for call in text.call_args_list]
+                self.assertFalse(any(label.startswith(("Chuột vào khe", "Đưa chuột", "Click ô"))
+                                     for label in labels))
+                self.assertTrue(any(label.startswith("Lượt hiện tại:") for label in labels))
+                if preview:
+                    self.assertIn("Tường ngang: hợp lệ", labels)
 
     # Chơi lại giữ thứ tự/cấp; Undo/Redo chỉ lùi cặp lượt, giữ nước bot mở đầu.
     def test_second_player_undo_redo_and_restart(self):

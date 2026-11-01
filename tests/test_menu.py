@@ -121,10 +121,11 @@ class MenuTests(unittest.TestCase):
             self.assertTrue(self.app.is_navigation_event(event))
         self.assertFalse(self.app.is_navigation_event(pygame.event.Event(pygame.QUIT)))
 
-    # Thoát trên menu và nút đóng cửa sổ đều kết thúc vòng lặp ứng dụng.
-    def test_exit_and_close(self):
-        self.assertTrue(self.click(self.menu.exit_button_rect.center, button=3))
-        self.assertFalse(self.click(self.menu.exit_button_rect.center))
+    # Vị trí nút Thoát cũ không đóng game; nút X vẫn kết thúc ở menu và trong ván.
+    def test_close_without_exit_button(self):
+        self.assertTrue(self.click((525, 560)))
+        self.assertEqual(self.app.screen, "menu")
+        self.assertFalse(hasattr(self.menu, "exit_button_rect"))
         for screen in ("menu", "game"):
             self.app.screen = screen
             self.assertFalse(self.app.handle_event(pygame.event.Event(pygame.QUIT)))

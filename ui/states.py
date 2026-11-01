@@ -28,22 +28,39 @@ class AppState(ABC):
 class MenuState(AppState):
     page = "main"
 
-    # Chọn cách chơi trước, chưa khởi động đồng hồ hoặc bot khi còn ở menu.
+    # Hai người vào ván ngay; đấu máy chọn cấp/lượt, dấu hỏi mở hướng dẫn.
     def handle_event(self, app, event):
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return True
         menu = app.menu_view
-        if menu.exit_button_rect.collidepoint(event.pos):
-            return False
         if menu.start_button_rect.collidepoint(event.pos):
-            app.change_state(TurnOrderState("two_players"))
+            app.game_controller.restart_game(mode="two_players", human_first=True)
+            app.change_state(HumanTurnState())
         elif menu.versus_bot_button_rect.collidepoint(event.pos):
             app.change_state(BotLevelState())
+        elif menu.help_button_rect.collidepoint(event.pos):
+            app.change_state(HelpState())
         return True
 
     # Vẽ menu chính, không hiện các cấp bot trên trang ngoài cùng.
     def draw(self, app):
         app.menu_view.draw()
+
+
+# Hướng dẫn thuộc luồng menu nên không tính giờ hoặc cho bot suy nghĩ.
+class HelpState(MenuState):
+    page = "help"
+
+    # Chỉ nút quay lại nhận click; đọc hướng dẫn không thay đổi dữ liệu ván.
+    def handle_event(self, app, event):
+        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
+                and app.menu_view.back_button_rect.collidepoint(event.pos)):
+            app.change_state(MenuState())
+        return True
+
+    # MenuView dùng font đi kèm để vẽ luật và hướng dẫn tiếng Việt.
+    def draw(self, app):
+        app.menu_view.draw(self.page)
 
 
 # State chọn một trong ba Strategy, chưa vào ván cho tới khi chọn thứ tự.
@@ -61,7 +78,7 @@ class BotLevelState(MenuState):
         for rect, level in ((menu.bot_button_rect, "easy"), (menu.medium_bot_button_rect, "medium"),
                             (menu.hard_bot_button_rect, "hard")):
             if rect.collidepoint(event.pos):
-                app.change_state(TurnOrderState("bot", level))
+                app.change_state(TurnOrderState(level))
                 break
         return True
 
@@ -70,13 +87,12 @@ class BotLevelState(MenuState):
         app.menu_view.draw(self.page)
 
 
-# State lưu lựa chọn tạm trong menu; vào ván mới khởi tạo Game và lượt đầu.
+# Chỉ đấu máy chọn thứ tự; vào ván mới khởi tạo Game và lượt đầu.
 class TurnOrderState(MenuState):
     page = "order"
 
-    # Giữ cách chơi/cấp đã chọn khi người dùng chọn lượt hoặc quay lại.
-    def __init__(self, mode, bot_level=None):
-        self.mode = mode
+    # Giữ cấp đã chọn trong lúc người dùng chọn chơi trước hoặc chơi sau.
+    def __init__(self, bot_level):
         self.bot_level = bot_level
 
     # Bên dưới chơi trước mang số 1, chơi sau mang số 2; bot có thể mở đầu.
@@ -85,20 +101,20 @@ class TurnOrderState(MenuState):
             return True
         menu = app.menu_view
         if menu.back_button_rect.collidepoint(event.pos):
-            app.change_state(BotLevelState() if self.mode == "bot" else MenuState())
+            app.change_state(BotLevelState())
             return True
         for rect, human_first in ((menu.first_button_rect, True), (menu.second_button_rect, False)):
             if rect.collidepoint(event.pos):
-                app.game_controller.restart_game(mode=self.mode, bot_level=self.bot_level,
+                app.game_controller.restart_game(mode="bot", bot_level=self.bot_level,
                                                   human_first=human_first)
                 game = app.game_controller.game
                 app.change_state(BotTurnState() if game.is_bot_turn else HumanTurnState())
                 break
         return True
 
-    # Nhắc rõ bên người chơi ở phía dưới trước khi vào ván.
+    # Vẽ trang chọn thứ tự của ván đấu máy.
     def draw(self, app):
-        app.menu_view.draw(self.page, mode=self.mode)
+        app.menu_view.draw(self.page)
 
 
 # Chia sẻ thao tác điều hướng và cách vẽ giữa các trạng thái trong ván.

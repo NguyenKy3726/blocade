@@ -195,8 +195,6 @@ class GameView:
         self.draw_text(mode_label, self.small_font, self.text_color, info_x, 215)
 
         self.draw_text(game.notice, self.small_font, self.text_color, 70, 735)
-        self.draw_text("Chuột vào khe: xem trước; click: đặt tường.",
-                       self.small_font, self.text_color, 70, 765)
 
     # Vẽ Chơi lại và Về menu cả khi đang chơi lẫn sau khi ván kết thúc.
     def draw_navigation_buttons(self):
@@ -243,7 +241,6 @@ class GameView:
         self.draw_players(game)
         self.draw_info(game)
         preview_y = 530 if game.mode == "bot" else 580
-        instruction_y = 560 if game.mode == "bot" else 610
         if wall_preview is not None:
             orientation, _, _, is_valid = wall_preview
             direction = "ngang" if orientation == "horizontal" else "dọc"
@@ -252,12 +249,6 @@ class GameView:
                            self.text_color, 700, preview_y)
         elif game.is_bot_turn:
             self.draw_text("Bot đang suy nghĩ…", self.small_font, self.text_color, 700, preview_y)
-        elif game.winner is None:
-            self.draw_text("Đưa chuột vào khe ngang/dọc.", self.small_font,
-                           self.text_color, 700, preview_y)
-        if game.winner is None and not game.is_bot_turn:
-            self.draw_text("Click ô được đánh dấu để đi.", self.small_font,
-                           self.text_color, 700, instruction_y)
 
         if game.mode == "bot":
             self.draw_undo_button(game.can_undo)

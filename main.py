@@ -17,7 +17,7 @@ running = True
 
 # State điều phối menu/lượt/kết thúc; controller tạo Command từ click trong ván.
 while running:
-    # Các trang chọn chế độ/cấp/lượt không tính giờ; chỉ vào ván mới bắt đầu.
+    # Menu và hướng dẫn không tính giờ; hai người vào ngay, bot chọn cấp/lượt.
     expired = app.update()
     for event in pygame.event.get():
         navigating = app.is_navigation_event(event)
@@ -37,5 +37,5 @@ while running:
     app.draw()
     view.clock.tick(60)
 
-# Giải phóng tài nguyên khi đóng cửa sổ hoặc chọn Thoát trên menu.
+# Giải phóng tài nguyên khi đóng cửa sổ bằng nút X.
 pygame.quit()

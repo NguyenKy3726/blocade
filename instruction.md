@@ -135,7 +135,7 @@ Sau khi chế độ hai người chạy đúng:
 Bot phải dùng chung hàm tạo danh sách nước đi hợp lệ với người chơi để nó cũng biết nhảy qua quân đúng luật.
 9. Làm giao diện bằng Pygame
 Khi luật và chế độ hai người đã chạy, thiết kế giao diện:
-- Menu: chọn chế độ; nếu chọn bot thì chọn cấp độ.
+- Menu: chọn chế độ; nếu chọn bot thì chọn cấp độ/thứ tự. Nút ? mở luật và hướng dẫn.
 - Bàn cờ: bàn ở giữa, hai quân màu khác nhau, tường dễ phân biệt.
 - Thông tin: lượt hiện tại, số tường còn lại, chế độ và cấp bot.
 - Di chuyển: làm nổi bật ô hợp lệ, bao gồm ô nhảy và ô chéo.
@@ -238,7 +238,7 @@ Mục này ưu tiên hơn thứ tự cũ khi có khác nhau:
 4. Bot dễ/trung bình/khó đã hoàn thành với Strategy/Factory; cấp khó dùng tìm kiếm sâu có giới hạn.
 5. State đã quản lý menu/lượt người/lượt bot/kết thúc. Bước tiếp theo dự kiến là rà trải nghiệm trên Windows, rồi hoàn thiện báo cáo/sơ đồ OOP/pattern.
 
-AppController là context của State pattern; ui/states.py quản lý MenuState, BotLevelState, TurnOrderState, HumanTurnState, BotTurnState và GameOverState. MenuView dùng cùng cửa sổ/font với GameView. Vẫn không thêm thông báo lý do hành động bị từ chối theo lựa chọn của người chơi.
+AppController là context của State pattern; ui/states.py quản lý MenuState, HelpState, BotLevelState, TurnOrderState, HumanTurnState, BotTurnState và GameOverState. MenuView dùng cùng cửa sổ/font với GameView. Vẫn không thêm thông báo lý do hành động bị từ chối theo lựa chọn của người chơi.
 
 12.7. Cách chơi với bot dễ hiện tại
 
@@ -247,7 +247,7 @@ AppController là context của State pattern; ui/states.py quản lý MenuState
 - Bot dễ chỉ đi quân: lấy danh sách nước hợp lệ từ Game (bao gồm nhảy), dùng BFS đánh giá đường còn lại qua tường rồi chọn nước có khoảng cách nhỏ nhất. Nếu hòa, chọn ngẫu nhiên. Bot chưa đánh giá đặt tường hoặc nhìn trước nước đáp trả.
 - `PathFinder.shortest_distance` tính số cạnh tới hàng đích, bỏ qua vị trí quân. Đây là ước lượng để chọn trong các nước đã hợp lệ, không thay thế luật nhảy của Game.
 - Bot chạy sau khi xử lý các sự kiện của khung hình, không dùng sleep/thread. Trong lượt bot, bỏ click đi quân/đặt tường của người; Chơi lại/Về menu vẫn được ưu tiên.
-- Chơi lại giữ chế độ bot và lựa chọn đi trước/đi sau. Về menu rồi chọn Hai người chơi sẽ bật lại đồng hồ 30 giây/lượt sau khi chọn thứ tự.
+- Chơi lại giữ chế độ bot và lựa chọn đi trước/đi sau. Về menu rồi chọn Hai người chơi sẽ vào ván ngay và bật lại đồng hồ 30 giây/lượt, xanh lá số 1 đi trước.
 - Kiến trúc hiện có BotStrategy, EasyStrategy, MediumStrategy, HardStrategy và BotStrategyFactory để chọn cấp. Undo đã có theo quy tắc mục 12.6 và cách dùng mục 12.8.
 - Kiểm tra riêng bot: `python -m unittest discover -s tests -p test_easy_bot.py -v` trong repo. Chạy toàn bộ test với `python -m unittest discover -s tests -v`. Test giao diện dùng SDL headless; vẫn cần chơi thử trên Windows.
 
@@ -313,16 +313,19 @@ Kiểm tra:
 - Trên Windows: chọn Khó, đi/đặt tường, thử Undo hoặc Về menu khi hiện Bot đang suy nghĩ, Chơi lại giữ cấp, Redo đúng nước cũ, và chuyển Hai người để xác nhận đồng hồ hoạt động lại. Kiểm tra thắng ván vẫn có thể Undo/Redo và đóng cửa sổ luôn được.
 - Bước tiếp theo dự kiến: rà/tinh chỉnh qua chơi thử Windows và hoàn thiện báo cáo, sơ đồ lớp cùng giải thích các pattern; chưa làm trong bước bot khó này.
 
-12.12. Font đi kèm, menu phân cấp và chọn thứ tự chơi
+12.12. Font đi kèm, menu phân cấp, hướng dẫn và chọn thứ tự chơi
 
 - `assets/fonts/NotoSans-Regular.ttf` là font dùng chung cho mọi màn hình, có dấu tiếng Việt. `OFL.txt` lưu giấy phép SIL Open Font License 1.1, `README.md` ghi nguồn và mã SHA-256. GameView lấy đường dẫn tuyệt đối từ `__file__`, không đọc font hệ thống hoặc tải font lúc chạy.
-- Menu chính theo thứ tự Hai người chơi, Đấu với máy, Thoát. Đấu với máy mở trang Dễ/Trung bình/Khó; sau khi chọn cấp sẽ chọn Chơi trước/Chơi sau. Hai người chơi cũng chọn thứ tự của bên xanh lá ở dưới. Quay lại trở về trang trước. Khi còn ở bất kỳ trang menu nào, đồng hồ và bot đều chưa hoạt động.
-- Người/xanh lá luôn bắt đầu ở dưới màn hình; bot/xanh nước ở trên. Chơi trước: xanh lá mang số 1 và mở đầu. Chơi sau: xanh lá mang số 2, xanh nước mang số 1 và mở đầu. Khi đấu bot, người không thể đi thay trong lượt mở đầu của bot.
+- Menu chính chỉ có Hai người chơi và Đấu với máy, kèm icon ? ở góc trên để mở Hướng dẫn. Không có nút Thoát; dùng dấu X của cửa sổ để đóng game.
+- Hai người chơi vào ván ngay, xanh lá số 1 đi trước; không chọn chơi trước/sau. Luồng này luôn đặt lại thứ tự mặc định, kể cả khi ván đấu bot trước đó người chọn chơi sau.
+- Đấu với máy mở trang Dễ/Trung bình/Khó, sau đó chọn Chơi trước/Chơi sau. Các trang cấp, thứ tự và hướng dẫn đều có nút mũi tên Quay lại ở góc trên trái, trở về trang trước. Khi còn ở bất kỳ trang menu/hướng dẫn nào, đồng hồ và bot đều chưa hoạt động.
+- Người/xanh lá luôn bắt đầu ở dưới màn hình; bot/xanh nước ở trên. Khi đấu bot, Chơi trước: xanh lá mang số 1 và mở đầu; Chơi sau: xanh lá mang số 2, xanh nước mang số 1 và mở đầu. Người không thể đi thay trong lượt mở đầu của bot.
 - Số hiển thị tách khỏi chỉ số nội bộ: `players[0]` luôn là người/xanh lá, `players[1]` là bot/xanh nước. Game vẫn giữ hàng xuất phát/đích cũ; GameView phản chiếu trục dọc cho ô, quân, gợi ý, tường và biến đổi ngược click về tọa độ luật. BFS, nhảy và cách chọn nước của bot không đổi.
 - Bảng thông tin bỏ dòng Vị trí; giữ tên phe và Tường còn lại. Hai người vẫn có đồng hồ 30 giây; đấu bot vẫn không có đồng hồ. Màu quân, tường và gợi ý tiếp tục theo phe, độc lập với số 1/2.
+- Bỏ các dòng chỉ thao tác cố định khỏi bàn cờ và menu chọn chế độ/cấp/lượt. Icon ? mở trang Hướng dẫn gồm luật đi/nhảy thẳng/chéo, hàng đích, đặt tường và điều kiện còn đường, màu xem trước, thao tác chuột, đồng hồ, Undo/Redo và điều hướng. Nội dung chia hai cột, tự xuống dòng theo độ rộng font. Bàn cờ vẫn giữ thông tin trạng thái như lượt hiện tại, hết giờ, bot đang suy nghĩ và tính hợp lệ của tường đang xem trước.
 - Chơi lại giữ chế độ, cấp bot và thứ tự đã chọn; xóa cả hai lịch sử như cũ. Nếu chọn chơi sau, bot mở đầu lại ván mới.
 - Undo/Redo vẫn gọi Command theo cặp lượt người → bot. Nếu người chơi sau, nước bot mở đầu được giữ lại: chưa có nước người thì Undo bị mờ; Undo hết các cặp cũng chỉ trở về lượt người ngay sau nước mở đầu đó. Redo không cho bot đánh thêm ngoài các Command đã lưu.
-- MenuState quản lý trang chính; BotLevelState chọn Strategy; TurnOrderState chỉ lưu lựa chọn tạm, khởi tạo ván khi người chọn thứ tự. Các State lượt người/bot/kết thúc và Factory/Strategy/Command tiếp tục dùng chung.
-- Kiểm tra riêng: `python -m unittest tests.test_menu_setup -v`. Bao gồm font khi chạy từ thư mục khác, menu/Quay lại, cả ba cấp và cả hai thứ tự, quân người ở dưới, số hiển thị, đồng hồ hai người, bot mở đầu, Undo/Redo/Chơi lại và click tường sau phản chiếu. Chạy toàn bộ với `python -m unittest discover -s tests -v`.
-- Cần kiểm tra GUI Windows: dấu tiếng Việt không bị ô vuông/cắt chữ; chọn từng cấp và cả hai thứ tự; quân người ở dưới và số đúng; đi quân/đặt tường khớp gợi ý; Chơi lại giữ lựa chọn; Undo/Redo khi chơi sau giữ nước bot mở đầu. Kiểm tra headless không thay thế bước này.
+- MenuState quản lý trang chính và vào hai người ngay; HelpState đọc hướng dẫn mà không thay đổi ván; BotLevelState chọn Strategy; TurnOrderState chỉ lưu cấp bot tạm, khởi tạo ván khi người chọn thứ tự. Các State lượt người/bot/kết thúc và Factory/Strategy/Command tiếp tục dùng chung.
+- Kiểm tra riêng: `python -m unittest tests.test_menu_setup -v`. Bao gồm font khi chạy từ thư mục khác, menu/Quay lại, Hướng dẫn không làm chạy ván và không tràn chữ, hai người vào ngay, cả ba cấp bot/cả hai thứ tự, số hiển thị, đồng hồ, Undo/Redo/Chơi lại và click tường sau phản chiếu. Chạy toàn bộ với `python -m unittest discover -s tests -v`.
+- Cần kiểm tra GUI Windows: dấu tiếng Việt không bị ô vuông/cắt chữ; icon ? mở hướng dẫn; mũi tên Quay lại ở đầu mỗi trang; Hai người chơi vào ngay; chọn từng cấp bot/cả hai thứ tự; quân người ở dưới và số đúng; đi quân/đặt tường khớp gợi ý; bàn cờ không còn các câu chỉ thao tác; Chơi lại/Undo/Redo và đóng bằng X hoạt động. Kiểm tra headless không thay thế bước này.
 - Bước tiếp theo dự kiến: nhận kết quả chơi thử Windows, xử lý lỗi giao diện nếu có, rồi hoàn thiện báo cáo/sơ đồ pattern; chưa triển khai thêm tính năng trong bước này.
