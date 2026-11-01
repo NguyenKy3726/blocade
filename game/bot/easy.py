@@ -1,14 +1,9 @@
-from random import choice
-
+from game.bot.strategy import BotStrategy
 from game.commands import MoveCommand
 
 
 # Bot dễ chọn nước đi về đích, dùng chung luật di chuyển với người chơi.
-class EasyStrategy:
-    # Cho phép truyền hàm chọn khi kiểm tra; mặc định ngẫu nhiên giữa các nước ngang nhau.
-    def __init__(self, choose=choice):
-        self.choose = choose
-
+class EasyStrategy(BotStrategy):
     # Chỉ tạo Command, chưa đổi bàn cờ; BFS đánh giá đường đi qua các cạnh chưa bị chặn.
     def choose_command(self, game):
         if not game.is_bot_turn:

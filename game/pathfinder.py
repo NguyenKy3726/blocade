@@ -41,6 +41,20 @@ class PathFinder:
 
         return None
 
+    # BFS ngược từ cả hàng đích: tạo bản đồ khoảng cách cho mọi ô chỉ trong một lần.
+    def distances_to_goal(self, board, goal_row):
+        distances = {(goal_row, col): 0 for col in range(board.size)}
+        queue = deque(distances)
+        while queue:
+            row, col = queue.popleft()
+            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                adjacent = row + dr, col + dc
+                if (board.is_inside(*adjacent) and adjacent not in distances
+                        and not board.is_edge_blocked((row, col), adjacent)):
+                    distances[adjacent] = distances[(row, col)] + 1
+                    queue.append(adjacent)
+        return distances
+
     # Kiểm tra lần lượt cả hai người chơi đều còn đường tới hàng đích.
     def both_players_have_paths(self, board, players):
         for player in players:

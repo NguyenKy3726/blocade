@@ -8,7 +8,8 @@ class MenuView:
         self.view = game_view
         self.start_button_rect = pygame.Rect(350, 350, 350, 60)
         self.bot_button_rect = pygame.Rect(350, 440, 350, 60)
-        self.exit_button_rect = pygame.Rect(350, 530, 350, 60)
+        self.medium_bot_button_rect = pygame.Rect(350, 530, 350, 60)
+        self.exit_button_rect = pygame.Rect(350, 620, 350, 60)
 
     # Vẽ nhãn ở giữa nút và đổi nền khi chuột trỏ vào.
     def draw_button(self, rect, text):
@@ -29,8 +30,9 @@ class MenuView:
             pygame.draw.circle(self.view.screen, color, (x, 285), 16)
         self.draw_button(self.start_button_rect, "Hai người chơi")
         self.draw_button(self.bot_button_rect, "Đấu bot dễ")
+        self.draw_button(self.medium_bot_button_rect, "Đấu bot trung bình")
         self.draw_button(self.exit_button_rect, "Thoát")
         label = self.view.small_font.render("Hai người: 30 giây/lượt · Đấu bot: không đồng hồ",
                                            True, self.view.text_color)
-        self.view.screen.blit(label, label.get_rect(center=(525, 635)))
+        self.view.screen.blit(label, label.get_rect(center=(525, 735)))
         pygame.display.flip()

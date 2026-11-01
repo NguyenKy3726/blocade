@@ -1,7 +1,7 @@
 import pygame
 
 from game.commands import MoveCommand, PlaceWallCommand
-from game.bot.easy import EasyStrategy
+from game.bot.strategy_factory import BotStrategyFactory
 
 
 # Chuyển click chuột thành Command đi quân hoặc đặt tường.
@@ -11,7 +11,7 @@ class GameController:
         self.game = game
         self.view = view
         self.selected_position = None
-        self.bot_strategy = EasyStrategy()
+        self.bot_strategy = BotStrategyFactory.create(game.bot_level)
 
     # Nhận diện click trái trong nút Chơi lại, tách khỏi thao tác bàn cờ.
     def is_restart_event(self, event):
@@ -40,8 +40,11 @@ class GameController:
         )
 
     # Chơi lại trên cùng cửa sổ và bỏ trạng thái thao tác của ván cũ.
-    def restart_game(self, mode=None):
-        self.game.reset(mode=mode)
+    def restart_game(self, mode=None, bot_level=None):
+        previous_level = self.game.bot_level
+        self.game.reset(mode=mode, bot_level=bot_level)
+        if self.game.bot_level != previous_level:
+            self.bot_strategy = BotStrategyFactory.create(self.game.bot_level)
         self.selected_position = None
 
     # Cập nhật đồng hồ và bỏ lựa chọn cũ khi người chơi bị mất lượt.

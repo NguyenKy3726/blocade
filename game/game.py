@@ -8,23 +8,28 @@ from game.pathfinder import PathFinder
 # Quản lý bàn cờ, người chơi, lượt chơi và kết quả ván.
 class Game:
     # Khởi tạo ván 9×9, mặc định hai người; chế độ bot được chọn từ menu.
-    def __init__(self, time_source=monotonic, mode="two_players"):
+    def __init__(self, time_source=monotonic, mode="two_players", bot_level="easy"):
         # Tách đồng hồ khỏi Pygame để kiểm tra mà không cần chờ thật.
         self.time_source = time_source
         self.turn_duration = 30.0
         self.mode = mode
+        self.bot_level = bot_level
         self.reset()
 
-    # Bắt đầu lại ván, giữ chế độ cũ nếu không truyền chế độ khác.
-    def reset(self, mode=None):
-        if mode is not None:
-            self.mode = mode
-        if self.mode not in ("two_players", "bot"):
+    # Bắt đầu lại ván, giữ chế độ và cấp bot cũ nếu không truyền lựa chọn khác.
+    def reset(self, mode=None, bot_level=None):
+        new_mode = self.mode if mode is None else mode
+        new_level = self.bot_level if bot_level is None else bot_level
+        if new_mode not in ("two_players", "bot"):
             raise ValueError("Chế độ chơi không hợp lệ")
+        if new_level not in ("easy", "medium"):
+            raise ValueError("Cấp bot không hợp lệ")
+        self.mode = new_mode
+        self.bot_level = new_level
         self.board = Board(size=9)
         self.players = [
             Player("Bạn" if self.mode == "bot" else "Người chơi 1", 0, 4, 8),
-            Player("Bot dễ" if self.mode == "bot" else "Người chơi 2", 8, 4, 0),
+            Player(f"Bot {self.bot_level_name}" if self.mode == "bot" else "Người chơi 2", 8, 4, 0),
         ]
         self.current_turn = 0
         self.winner = None
@@ -35,6 +40,11 @@ class Game:
         self.notice = ""
         self.command_history = []
         self.redo_history = []
+
+    # Tên hiển thị dùng chung cho quân bot và nhãn chế độ trên giao diện.
+    @property
+    def bot_level_name(self):
+        return {"easy": "dễ", "medium": "trung bình"}[self.bot_level]
 
     # Chụp dữ liệu có thể đổi trong hành động; tạo bản sao để lịch sử không bị ghi đè.
     def capture_state(self):

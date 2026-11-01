@@ -184,7 +184,7 @@ class GameView:
                     self.small_font, self.player_colors[index], info_x, y + 85,
                 )
 
-        mode_label = "Đấu bot dễ" if game.mode == "bot" else "Hai người chơi"
+        mode_label = f"Đấu bot {game.bot_level_name}" if game.mode == "bot" else "Hai người chơi"
         self.draw_text(mode_label, self.small_font, self.text_color, info_x, 215)
 
         self.draw_text(game.notice, self.small_font, self.text_color, 70, 735)

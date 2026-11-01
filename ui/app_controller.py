@@ -21,6 +21,7 @@ class AppController:
             return False
         if self.screen == "menu":
             rects = (self.menu_view.start_button_rect, self.menu_view.bot_button_rect,
+                     self.menu_view.medium_bot_button_rect,
                      self.menu_view.exit_button_rect)
         else:
             view = self.game_controller.view
@@ -41,7 +42,10 @@ class AppController:
                 self.game_controller.restart_game(mode="two_players")
                 self.screen = "game"
             elif left_click and self.menu_view.bot_button_rect.collidepoint(event.pos):
-                self.game_controller.restart_game(mode="bot")
+                self.game_controller.restart_game(mode="bot", bot_level="easy")
+                self.screen = "game"
+            elif left_click and self.menu_view.medium_bot_button_rect.collidepoint(event.pos):
+                self.game_controller.restart_game(mode="bot", bot_level="medium")
                 self.screen = "game"
             return True
         if left_click and self.game_controller.view.menu_button_rect.collidepoint(event.pos):
