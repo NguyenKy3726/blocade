@@ -11,6 +11,7 @@ import pygame
 
 from game.game import Game
 from game.commands import MoveCommand, PlaceWallCommand
+from tests.support import menu_frames
 from ui.controller import GameController
 from ui.game_view import GameView
 from ui.menu_view import MenuView
@@ -141,7 +142,7 @@ class MouseTests(unittest.TestCase):
 
     # Đổi tọa độ tương đối trên bàn thành tọa độ cửa sổ.
     def position(self, x, y):
-        return self.view.board_x + x, self.view.board_y + y
+        return self.view.model_to_screen_point((self.view.board_x + x, self.view.board_y + y))
 
     # Gửi click trái giống thao tác người chơi.
     def click(self, position):
@@ -305,8 +306,6 @@ class MouseTests(unittest.TestCase):
     def test_main_menu_start_restart_discards_old_clicks(self):
         self.assertTrue(self.game.place_wall_current_player("horizontal", 2, 2))
         self.clock.now += 30
-        start = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                   pos=MenuView(self.view).start_button_rect.center)
         restart = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                      pos=self.view.restart_button_rect.center)
         old_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
@@ -315,7 +314,7 @@ class MouseTests(unittest.TestCase):
         main_path = Path(__file__).resolve().parents[1] / "main.py"
         with patch("game.game.Game", return_value=self.game), \
                 patch("ui.game_view.GameView", return_value=self.view), \
-                patch("pygame.event.get", side_effect=[[start], [restart, old_click], [quit_event]]), \
+                patch("pygame.event.get", side_effect=[*menu_frames(MenuView(self.view), mode="two_players"), [restart, old_click], [quit_event]]), \
                 patch.object(self.view, "draw", wraps=self.view.draw) as draw:
             result = runpy.run_path(str(main_path), run_name="__main__")
         self.assertEqual(self.game.board.walls, [])

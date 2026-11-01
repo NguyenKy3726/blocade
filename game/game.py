@@ -8,30 +8,35 @@ from game.pathfinder import PathFinder
 # Quản lý bàn cờ, người chơi, lượt chơi và kết quả ván.
 class Game:
     # Khởi tạo ván 9×9, mặc định hai người; chế độ bot được chọn từ menu.
-    def __init__(self, time_source=monotonic, mode="two_players", bot_level="easy"):
+    def __init__(self, time_source=monotonic, mode="two_players", bot_level="easy", human_first=True):
         # Tách đồng hồ khỏi Pygame để kiểm tra mà không cần chờ thật.
         self.time_source = time_source
         self.turn_duration = 30.0
         self.mode = mode
         self.bot_level = bot_level
+        self.human_first = human_first
         self.reset()
 
-    # Bắt đầu lại ván, giữ chế độ và cấp bot cũ nếu không truyền lựa chọn khác.
-    def reset(self, mode=None, bot_level=None):
+    # Bắt đầu lại ván, giữ chế độ, cấp bot và thứ tự cũ nếu không chọn khác.
+    def reset(self, mode=None, bot_level=None, human_first=None):
         new_mode = self.mode if mode is None else mode
         new_level = self.bot_level if bot_level is None else bot_level
+        new_first = self.human_first if human_first is None else human_first
         if new_mode not in ("two_players", "bot"):
             raise ValueError("Chế độ chơi không hợp lệ")
         if new_level not in ("easy", "medium", "hard"):
             raise ValueError("Cấp bot không hợp lệ")
+        if not isinstance(new_first, bool):
+            raise ValueError("Lựa chọn đi trước phải là True hoặc False")
         self.mode = new_mode
         self.bot_level = new_level
+        self.human_first = new_first
         self.board = Board(size=9)
         self.players = [
-            Player("Bạn" if self.mode == "bot" else "Người chơi 1", 0, 4, 8),
-            Player(f"Bot {self.bot_level_name}" if self.mode == "bot" else "Người chơi 2", 8, 4, 0),
+            Player("Bạn" if self.mode == "bot" else f"Người chơi {self.player_number(0)}", 0, 4, 8),
+            Player(f"Bot {self.bot_level_name}" if self.mode == "bot" else f"Người chơi {self.player_number(1)}", 8, 4, 0),
         ]
-        self.current_turn = 0
+        self.current_turn = 0 if self.human_first else 1
         self.winner = None
         self.path_finder = PathFinder()
         self.time_remaining = [self.turn_duration, self.turn_duration]
@@ -40,6 +45,11 @@ class Game:
         self.notice = ""
         self.command_history = []
         self.redo_history = []
+
+    # Số 1 luôn là bên đi trước; chỉ số nội bộ 0 vẫn là người/xanh lá ở dưới.
+    def player_number(self, index):
+        first_index = 0 if self.human_first else 1
+        return 1 if index == first_index else 2
 
     # Tên hiển thị dùng chung cho quân bot và nhãn chế độ trên giao diện.
     @property

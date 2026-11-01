@@ -24,29 +24,81 @@ class AppState(ABC):
         pass
 
 
-# Menu không cho bàn cờ, đồng hồ hoặc bot nhận thao tác.
+# Menu chính chỉ chọn Hai người chơi hoặc Đấu với máy.
 class MenuState(AppState):
-    # Chọn chế độ/cấp qua chuột; vào ván luôn bắt đầu trạng thái lượt người.
+    page = "main"
+
+    # Chọn cách chơi trước, chưa khởi động đồng hồ hoặc bot khi còn ở menu.
     def handle_event(self, app, event):
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return True
         menu = app.menu_view
         if menu.exit_button_rect.collidepoint(event.pos):
             return False
-        choices = [(menu.start_button_rect, "two_players", None),
-                   (menu.bot_button_rect, "bot", "easy"),
-                   (menu.medium_bot_button_rect, "bot", "medium"),
-                   (menu.hard_bot_button_rect, "bot", "hard")]
-        for rect, mode, level in choices:
+        if menu.start_button_rect.collidepoint(event.pos):
+            app.change_state(TurnOrderState("two_players"))
+        elif menu.versus_bot_button_rect.collidepoint(event.pos):
+            app.change_state(BotLevelState())
+        return True
+
+    # Vẽ menu chính, không hiện các cấp bot trên trang ngoài cùng.
+    def draw(self, app):
+        app.menu_view.draw()
+
+
+# State chọn một trong ba Strategy, chưa vào ván cho tới khi chọn thứ tự.
+class BotLevelState(MenuState):
+    page = "levels"
+
+    # Chọn cấp chuyển sang chọn lượt; Quay lại về menu chính.
+    def handle_event(self, app, event):
+        if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
+            return True
+        menu = app.menu_view
+        if menu.back_button_rect.collidepoint(event.pos):
+            app.change_state(MenuState())
+            return True
+        for rect, level in ((menu.bot_button_rect, "easy"), (menu.medium_bot_button_rect, "medium"),
+                            (menu.hard_bot_button_rect, "hard")):
             if rect.collidepoint(event.pos):
-                app.game_controller.restart_game(mode=mode, bot_level=level)
-                app.change_state(HumanTurnState())
+                app.change_state(TurnOrderState("bot", level))
                 break
         return True
 
-    # Vẽ menu thay vì bàn cờ.
+    # Chỉ vẽ ba cấp Dễ/Trung bình/Khó và nút Quay lại.
     def draw(self, app):
-        app.menu_view.draw()
+        app.menu_view.draw(self.page)
+
+
+# State lưu lựa chọn tạm trong menu; vào ván mới khởi tạo Game và lượt đầu.
+class TurnOrderState(MenuState):
+    page = "order"
+
+    # Giữ cách chơi/cấp đã chọn khi người dùng chọn lượt hoặc quay lại.
+    def __init__(self, mode, bot_level=None):
+        self.mode = mode
+        self.bot_level = bot_level
+
+    # Bên dưới chơi trước mang số 1, chơi sau mang số 2; bot có thể mở đầu.
+    def handle_event(self, app, event):
+        if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
+            return True
+        menu = app.menu_view
+        if menu.back_button_rect.collidepoint(event.pos):
+            app.change_state(BotLevelState() if self.mode == "bot" else MenuState())
+            return True
+        for rect, human_first in ((menu.first_button_rect, True), (menu.second_button_rect, False)):
+            if rect.collidepoint(event.pos):
+                app.game_controller.restart_game(mode=self.mode, bot_level=self.bot_level,
+                                                  human_first=human_first)
+                game = app.game_controller.game
+                app.change_state(BotTurnState() if game.is_bot_turn else HumanTurnState())
+                break
+        return True
+
+    # Nhắc rõ bên người chơi ở phía dưới trước khi vào ván.
+    def draw(self, app):
+        app.menu_view.draw(self.page, mode=self.mode)
 
 
 # Chia sẻ thao tác điều hướng và cách vẽ giữa các trạng thái trong ván.

@@ -8,6 +8,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame
 
 from game.game import Game
+from tests.support import start_game
 from ui.app_controller import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -53,9 +54,9 @@ class MenuTests(unittest.TestCase):
     def test_start_after_waiting_on_menu(self):
         self.now += 90
         self.click(self.menu.start_button_rect.center, button=3)
-        self.click((self.view.board_x + 20, self.view.board_y + 20))
+        self.click(self.view.model_to_screen_point((self.view.board_x + 20, self.view.board_y + 20)))
         self.assertEqual(self.app.screen, "menu")
-        self.assertTrue(self.click(self.menu.start_button_rect.center))
+        self.assertTrue(start_game(self.app, self.menu, mode="two_players", level="easy"))
         self.assertEqual(self.app.screen, "game")
         self.assertEqual(self.game.turn_started_at, self.now)
         self.now += 5
@@ -67,7 +68,7 @@ class MenuTests(unittest.TestCase):
     def test_back_to_menu_and_start_fresh(self):
         for state in ("playing", "winner", "timeout"):
             with self.subTest(state=state):
-                self.click(self.menu.start_button_rect.center)
+                start_game(self.app, self.menu, mode="two_players", level="easy")
                 self.assertTrue(self.game.place_wall_current_player("horizontal", 2, 2))
                 if state == "winner":
                     self.game.winner = self.game.players[0]
@@ -81,7 +82,7 @@ class MenuTests(unittest.TestCase):
                 self.assertFalse(self.app.update())
                 self.app.draw()
                 self.assertEqual(self.game.time_remaining, remaining)
-                self.click(self.menu.start_button_rect.center)
+                start_game(self.app, self.menu, mode="two_players", level="easy")
                 self.assertEqual(self.app.screen, "game")
                 self.assertEqual([p.position for p in self.game.players], [(0, 4), (8, 4)])
                 self.assertEqual([p.walls_remaining for p in self.game.players], [10, 10])
@@ -96,8 +97,8 @@ class MenuTests(unittest.TestCase):
 
     # Trong ván, AppController vẫn chuyển click cho Command và nút Chơi lại.
     def test_game_actions_and_restart_through_app(self):
-        self.click(self.menu.start_button_rect.center)
-        self.click((self.view.board_x + 4 * 66 + 20, self.view.board_y + 66 + 20))
+        start_game(self.app, self.menu, mode="two_players", level="easy")
+        self.click(self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 20, self.view.board_y + 66 + 20)))
         self.assertEqual(self.game.players[0].position, (1, 4))
         self.assertEqual(self.game.current_turn, 1)
         self.now += 30
@@ -114,7 +115,7 @@ class MenuTests(unittest.TestCase):
         self.assertTrue(self.app.is_navigation_event(event))
         event.button = 3
         self.assertFalse(self.app.is_navigation_event(event))
-        self.click(self.menu.start_button_rect.center)
+        start_game(self.app, self.menu, mode="two_players", level="easy")
         for rect in (self.view.restart_button_rect, self.view.menu_button_rect):
             event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=rect.center)
             self.assertTrue(self.app.is_navigation_event(event))

@@ -16,6 +16,7 @@ from game.bot.strategy_factory import BotStrategyFactory
 from game.commands import MoveCommand, PlaceWallCommand
 from game.game import Game
 from game.pathfinder import PathFinder
+from tests.support import start_game
 from ui.app_controller import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -193,7 +194,7 @@ class MediumFlowTests(unittest.TestCase):
 
     # Chọn trung bình, chơi lại giữ cấp; chuyển dễ/hai người vẫn đúng chiến lược và giờ.
     def test_select_restart_and_switch_levels(self):
-        self.click(self.menu.medium_bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="medium")
         self.assertEqual(self.game.bot_level, "medium")
         self.assertEqual(self.game.players[1].name, "Bot trung bình")
         self.assertIsInstance(self.controller.bot_strategy, MediumStrategy)
@@ -207,21 +208,21 @@ class MediumFlowTests(unittest.TestCase):
             self.assertIn("Đấu bot trung bình", labels)
             self.assertFalse(any(label.startswith("Lượt:") for label in labels))
         self.click(self.view.menu_button_rect.center)
-        self.click(self.menu.bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="easy")
         self.assertEqual(self.game.bot_level, "easy")
         self.assertIsInstance(self.controller.bot_strategy, EasyStrategy)
         self.click(self.view.menu_button_rect.center)
-        self.click(self.menu.start_button_rect.center)
+        start_game(self.app, self.menu, mode="two_players", level="easy")
         self.assertTrue(self.game.timer_enabled)
         self.assertFalse(self.app.update_bot())
 
     # Bot đặt tường qua Command; Undo/Redo khôi phục cả tường xanh và nước người.
     def test_wall_command_undo_redo(self):
-        self.click(self.menu.medium_bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="medium")
         self.game.players[0].row = 6
         self.game.players[1].col = 0
         before = self.game.capture_state()
-        self.click((self.view.board_x + 4 * 66 + 29, self.view.board_y + 7 * 66 + 29))
+        self.click(self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 7 * 66 + 29)))
         self.assertTrue(self.app.update_bot())
         self.assertIsInstance(self.game.command_history[-1], PlaceWallCommand)
         self.assertEqual(self.game.players[1].walls_remaining, 9)
@@ -241,7 +242,7 @@ class MediumFlowTests(unittest.TestCase):
 
     # Chạy nhiều lượt thật: mọi nước bot hợp lệ, không khóa đường và lịch sử tăng đúng.
     def test_representative_game_and_decision_cost(self):
-        self.click(self.menu.medium_bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="medium")
         longest = 0.0
         for _ in range(12):
             if self.game.winner is not None:

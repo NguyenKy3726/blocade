@@ -14,6 +14,7 @@ from game.bot.easy import EasyStrategy
 from game.commands import MoveCommand, PlaceWallCommand
 from game.game import Game
 from game.pathfinder import PathFinder
+from tests.support import start_game, menu_frames
 from ui.app_controller import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -133,11 +134,11 @@ class BotFlowTests(unittest.TestCase):
 
     # Đổi tọa độ ô thành vị trí click ở giữa ô.
     def cell(self, row, col):
-        return self.view.board_x + col * 66 + 29, self.view.board_y + row * 66 + 29
+        return self.view.model_to_screen_point((self.view.board_x + col * 66 + 29, self.view.board_y + row * 66 + 29))
 
     # Menu vào đúng bot; không mất lượt khi chờ lâu, không vẽ bất kỳ đồng hồ nào.
     def test_bot_menu_disables_and_hides_clocks(self):
-        self.click(self.menu.bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="easy")
         self.assertEqual(self.app.screen, "game")
         self.assertEqual(self.game.mode, "bot")
         self.now += 1000
@@ -152,11 +153,11 @@ class BotFlowTests(unittest.TestCase):
 
     # Người chỉ được đi một nước; click đi/đặt tường khi tới lượt bot đều bị bỏ.
     def test_one_reply_and_no_human_input_on_bot_turn(self):
-        self.click(self.menu.bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="easy")
         self.click(self.cell(1, 4))
         self.assertTrue(self.game.is_bot_turn)
         self.click(self.cell(7, 4))
-        wall_position = self.view.board_x + 20, self.view.board_y + 62
+        wall_position = self.view.model_to_screen_point((self.view.board_x + 20, self.view.board_y + 62))
         self.click(wall_position)
         self.assertEqual(self.game.players[1].position, (8, 4))
         self.assertEqual(self.game.board.walls, [])
@@ -168,10 +169,10 @@ class BotFlowTests(unittest.TestCase):
 
     # Nước sai không gọi bot; đặt tường hợp lệ vẫn được bot đáp trả qua Command.
     def test_invalid_click_and_wall_response(self):
-        self.click(self.menu.bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="easy")
         self.click(self.cell(5, 5))
         self.assertFalse(self.app.update_bot())
-        self.click((self.view.board_x + 20, self.view.board_y + 62))
+        self.click(self.view.model_to_screen_point((self.view.board_x + 20, self.view.board_y + 62)))
         self.assertTrue(self.app.update_bot())
         self.assertEqual(self.game.wall_owners, {("horizontal", 0, 0): 0})
         self.assertEqual(self.game.players[0].walls_remaining, 9)
@@ -179,7 +180,7 @@ class BotFlowTests(unittest.TestCase):
 
     # Chơi lại giữ chế độ bot; về menu không chạy bot và chuyển hai người bật lại giờ.
     def test_restart_back_and_switch_to_two_players(self):
-        self.click(self.menu.bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="easy")
         self.click(self.cell(1, 4))
         self.click(self.view.restart_button_rect.center)
         self.assertEqual(self.game.mode, "bot")
@@ -189,7 +190,7 @@ class BotFlowTests(unittest.TestCase):
         self.click(self.cell(1, 4))
         self.click(self.view.menu_button_rect.center)
         self.assertFalse(self.app.update_bot())
-        self.click(self.menu.start_button_rect.center)
+        start_game(self.app, self.menu, mode="two_players", level="easy")
         self.assertTrue(self.game.timer_enabled)
         self.assertEqual(self.game.players[1].name, "Người chơi 2")
         self.now += 30
@@ -199,15 +200,13 @@ class BotFlowTests(unittest.TestCase):
 
     # Chạy main thật với hai click cùng khung hình; chỉ một nước bot được thực thi.
     def test_main_runs_bot_after_events(self):
-        start = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                   pos=self.menu.bot_button_rect.center)
         human = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=self.cell(1, 4))
         extra = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=self.cell(7, 4))
         main_path = Path(__file__).resolve().parents[1] / "main.py"
         with patch("game.game.Game", return_value=self.game), \
                 patch("ui.game_view.GameView", return_value=self.view), \
                 patch("ui.controller.GameController", return_value=self.controller), \
-                patch("pygame.event.get", side_effect=[[start], [human, extra],
+                patch("pygame.event.get", side_effect=[*menu_frames(self.menu), [human, extra],
                                                        [pygame.event.Event(pygame.QUIT)]]), \
                 patch.object(self.controller.bot_strategy, "choose_command",
                              wraps=self.controller.bot_strategy.choose_command) as choose:

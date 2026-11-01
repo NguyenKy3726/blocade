@@ -11,6 +11,7 @@ import pygame
 
 from game.commands import MoveCommand, PlaceWallCommand
 from game.game import Game
+from tests.support import start_game, menu_frames
 from ui.app_controller import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -200,7 +201,7 @@ class RedoFlowTests(unittest.TestCase):
         self.controller = GameController(self.game, self.view)
         self.menu = MenuView(self.view)
         self.app = AppController(self.controller, self.menu)
-        self.click(self.menu.bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="easy")
 
     # Đóng các tài nguyên Pygame sau mỗi phép kiểm tra.
     def tearDown(self):
@@ -213,7 +214,7 @@ class RedoFlowTests(unittest.TestCase):
 
     # Cho người đi nước đầu để tạo lịch sử cho bot đáp trả.
     def first_move(self):
-        self.click((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29))
+        self.click(self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29)))
 
     # Nút Redo bật sau Undo; làm lại đúng bot cũ, không gọi chọn nước ngẫu nhiên lần nữa.
     def test_redo_button_does_not_reselect_bot(self):
@@ -262,7 +263,7 @@ class RedoFlowTests(unittest.TestCase):
             else:
                 self.click(self.view.menu_button_rect.center)
                 self.assertEqual(self.game.redo_history, [])
-                self.click(self.menu.start_button_rect.center)
+                start_game(self.app, self.menu, mode="two_players", level="easy")
             self.assertEqual(self.game.redo_history, [])
             self.assertFalse(self.game.can_redo)
         with patch.object(self.view, "draw_redo_button") as draw:
@@ -272,21 +273,19 @@ class RedoFlowTests(unittest.TestCase):
 
     # Main bỏ click dư sau Redo; không gọi bot lần hai cho cặp đã khôi phục.
     def test_main_discards_click_after_redo(self):
-        start = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                   pos=self.menu.bot_button_rect.center)
         human = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                   pos=(self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29))
+                                   pos=self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29)))
         undo = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                   pos=self.view.undo_button_rect.center)
         redo = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                   pos=self.view.redo_button_rect.center)
         extra = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                   pos=(self.view.board_x + 4 * 66 + 29, self.view.board_y + 2 * 66 + 29))
+                                   pos=self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 2 * 66 + 29)))
         main_path = Path(__file__).resolve().parents[1] / "main.py"
         with patch("game.game.Game", return_value=self.game), \
                 patch("ui.game_view.GameView", return_value=self.view), \
                 patch("ui.controller.GameController", return_value=self.controller), \
-                patch("pygame.event.get", side_effect=[[start], [human], [undo], [redo, extra],
+                patch("pygame.event.get", side_effect=[*menu_frames(self.menu), [human], [undo], [redo, extra],
                                                        [pygame.event.Event(pygame.QUIT)]]), \
                 patch.object(self.controller.bot_strategy, "choose_command",
                              wraps=self.controller.bot_strategy.choose_command) as choose:

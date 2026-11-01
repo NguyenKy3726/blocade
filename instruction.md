@@ -207,15 +207,15 @@ Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ t�
 - Trong chế độ hai người, mỗi người có đồng hồ riêng, đếm ngược 30 giây cho mỗi lượt. Chỉ bên đang tới lượt chạy đồng hồ; bên chờ giữ nguyên số hiển thị tới lượt tiếp theo.
 - Đi quân hoặc đặt tường hợp lệ kết thúc lượt. Khi nhận lượt mới, đồng hồ của người đó được đặt lại thành 30 giây.
 - Hết giờ thì mất lượt, không bị xử thua và không bị trừ tường. Nước đi hoặc tường không hợp lệ không đặt lại đồng hồ.
-- Khi có người thắng, cả hai đồng hồ dừng. Nút Chơi lại ở bên phải bàn dùng được cả trong ván và sau khi thắng: đưa quân về vị trí đầu, xóa tường và màu sở hữu, cấp lại 10 tường và 30 giây mỗi phe, xanh lá đi trước, xóa lựa chọn cũ và thông báo hết giờ. Menu đã có Hai người chơi, Đấu bot dễ/trung bình/khó và Thoát; nút Về menu trên bàn cờ kết thúc luồng ván hiện tại, vào lại bắt đầu ván mới.
+- Khi có người thắng, cả hai đồng hồ dừng. Nút Chơi lại ở bên phải bàn dùng được cả trong ván và sau khi thắng: đưa quân về vị trí đầu, xóa tường và màu sở hữu, cấp lại 10 tường và 30 giây mỗi phe trong chế độ hai người, giữ lựa chọn đi trước/đi sau, xóa lựa chọn cũ và thông báo hết giờ. Menu phân cấp theo mục 12.12; nút Về menu trên bàn cờ kết thúc luồng ván hiện tại, vào lại bắt đầu ván mới.
 - Đưa chuột vào khe ngang/dọc để xem trước; click trái để xác nhận đặt tường. Tại giao điểm, hướng theo đường giữa khe gần chuột hơn; nếu bằng nhau thì chưa chọn hướng, hãy dịch chuột vào khe muốn đặt.
 - Đặt tường hoàn toàn bằng chuột; H/V/Esc không thay đổi hướng hoặc chế độ chơi.
-- Hai phe dùng màu xanh lá (người chơi 1) và xanh nước (người chơi 2), áp dụng cho quân và tường đã đặt.
+- Hai phe dùng màu xanh lá và xanh nước cho quân và tường đã đặt. Số trên quân được xác định theo thứ tự chơi, không cố định theo màu (mục 12.12).
 - Tường xem trước hợp lệ dùng màu nhạt hơn của phe đang tới lượt; không hợp lệ luôn màu đỏ, kèm chữ ghi hướng và tính hợp lệ.
 - Chấm gợi ý nước đi của phe xanh lá giữ màu xanh lá hiện tại; phe xanh nước dùng màu xanh nước cùng màu quân.
 - Các ô đi hợp lệ hiện ngay khi tới lượt, kể cả sau khi đặt tường hoặc hết giờ. Click thẳng ô đích để di chuyển, không cần chọn quân. Khi ván kết thúc, không còn gợi ý đi.
-- Bộ kiểm tra mới: chạy `python -m unittest discover -s tests -v` từ thư mục repo trên Windows có Pygame và font Arial. Các kiểm tra dùng SDL headless và đồng hồ giả, không thay thế việc kiểm tra GUI bằng tay.
-- Trên Codex/Linux, đường dẫn font Windows vẫn được hỗ trợ bởi cấu hình cục bộ đã thiết lập: chạy từ `/workspace/blocade-runtime`, dùng Python `/workspace/blocade-env/bin/python`, đặt `PYTHONPATH=/workspace/blocade` và truyền `-m unittest discover -s /workspace/blocade/tests -v`. Font đa nền tảng trong mã nguồn vẫn là việc riêng cần xử lý sau.
+- Chạy `python -m unittest discover -s tests -v` từ thư mục repo có Pygame. Font Noto Sans đi kèm repo, hỗ trợ tiếng Việt; không cần Arial hoặc cấu hình font theo máy. Các kiểm tra dùng SDL headless và đồng hồ giả, không thay thế việc kiểm tra GUI bằng tay.
+- Trên Codex/Linux hiện tại có thể chạy từ repo bằng `/workspace/blocade-env/bin/python -m unittest discover -s tests -v`; không còn cần thư mục runtime hoặc liên kết giả đường dẫn font Windows. Đường dẫn font dựa trên vị trí file Python nên chạy `main.py` từ thư mục khác cũng được.
 
 12.5. Command cho hành động đi quân và đặt tường
 
@@ -238,16 +238,16 @@ Mục này ưu tiên hơn thứ tự cũ khi có khác nhau:
 4. Bot dễ/trung bình/khó đã hoàn thành với Strategy/Factory; cấp khó dùng tìm kiếm sâu có giới hạn.
 5. State đã quản lý menu/lượt người/lượt bot/kết thúc. Bước tiếp theo dự kiến là rà trải nghiệm trên Windows, rồi hoàn thiện báo cáo/sơ đồ OOP/pattern.
 
-AppController là context của State pattern; ui/states.py quản lý MenuState, HumanTurnState, BotTurnState và GameOverState. MenuView dùng cùng cửa sổ/font với GameView. Vẫn không thêm thông báo lý do hành động bị từ chối theo lựa chọn của người chơi.
+AppController là context của State pattern; ui/states.py quản lý MenuState, BotLevelState, TurnOrderState, HumanTurnState, BotTurnState và GameOverState. MenuView dùng cùng cửa sổ/font với GameView. Vẫn không thêm thông báo lý do hành động bị từ chối theo lựa chọn của người chơi.
 
 12.7. Cách chơi với bot dễ hiện tại
 
-- Chọn Đấu bot dễ ở menu. Bạn là xanh lá, đi trước; bot là xanh nước.
+- Chọn Đấu với máy → Dễ → Chơi trước hoặc Chơi sau. Bạn xanh lá luôn ở dưới, bot xanh nước ở trên; bên số 1 đi trước.
 - Bạn có thể đi quân hoặc đặt tường bằng chuột. Bot đáp trả một nước sau hành động hợp lệ của bạn, qua MoveCommand; click sai không khiến bot được đi.
 - Bot dễ chỉ đi quân: lấy danh sách nước hợp lệ từ Game (bao gồm nhảy), dùng BFS đánh giá đường còn lại qua tường rồi chọn nước có khoảng cách nhỏ nhất. Nếu hòa, chọn ngẫu nhiên. Bot chưa đánh giá đặt tường hoặc nhìn trước nước đáp trả.
 - `PathFinder.shortest_distance` tính số cạnh tới hàng đích, bỏ qua vị trí quân. Đây là ước lượng để chọn trong các nước đã hợp lệ, không thay thế luật nhảy của Game.
 - Bot chạy sau khi xử lý các sự kiện của khung hình, không dùng sleep/thread. Trong lượt bot, bỏ click đi quân/đặt tường của người; Chơi lại/Về menu vẫn được ưu tiên.
-- Chơi lại giữ chế độ bot, xanh lá bắt đầu ván mới. Về menu rồi chọn Hai người chơi sẽ bật lại đồng hồ 30 giây/lượt.
+- Chơi lại giữ chế độ bot và lựa chọn đi trước/đi sau. Về menu rồi chọn Hai người chơi sẽ bật lại đồng hồ 30 giây/lượt sau khi chọn thứ tự.
 - Kiến trúc hiện có BotStrategy, EasyStrategy, MediumStrategy, HardStrategy và BotStrategyFactory để chọn cấp. Undo đã có theo quy tắc mục 12.6 và cách dùng mục 12.8.
 - Kiểm tra riêng bot: `python -m unittest discover -s tests -p test_easy_bot.py -v` trong repo. Chạy toàn bộ test với `python -m unittest discover -s tests -v`. Test giao diện dùng SDL headless; vẫn cần chơi thử trên Windows.
 
@@ -277,7 +277,7 @@ AppController là context của State pattern; ui/states.py quản lý MenuState
 
 12.10. Bot trung bình và Strategy/Factory
 
-- Menu có Đấu bot trung bình. Người là xanh lá đi trước; bot xanh nước. Cả ba cấp bot đều không có đồng hồ, dùng cùng luật đi/nhảy, đặt tường, BFS và lịch sử Command.
+- Chọn Đấu với máy → Trung bình rồi chọn thứ tự chơi. Người xanh lá ở dưới; bot xanh nước ở trên. Cả ba cấp bot đều không có đồng hồ, dùng cùng luật đi/nhảy, đặt tường, BFS và lịch sử Command.
 - BotStrategy định nghĩa choose_command(game). EasyStrategy và MediumStrategy thực hiện giao diện này. BotStrategyFactory.create(level) hiện tạo chiến lược theo easy/medium/hard; cấp không hỗ trợ bị từ chối, không tự thay bằng cấp khác. Game giữ bot_level, controller giữ Strategy được Factory tạo.
 - MediumStrategy ưu tiên nước tới đích ngay. Nếu chưa thắng được, thử các nước đi hợp lệ và tối đa 128 vị trí/hướng tường khi còn tường.
 - PathFinder.distances_to_goal chạy BFS ngược từ cả hàng đích để tính bản đồ đường còn lại. Đánh giá số lượt dùng nước đầu hợp lệ từ Game, vì vậy có tính nhảy thẳng/chéo ở bước đầu; phần đường sau đó là ước lượng qua tường, không mô phỏng toàn bộ quân/lượt tương lai.
@@ -291,7 +291,7 @@ AppController là context của State pattern; ui/states.py quản lý MenuState
 
 12.11. Bot khó và đầy đủ các pattern đã thống nhất
 
-- Menu có Đấu bot khó. Bạn xanh lá đi trước, bot xanh nước; không có đồng hồ. Chơi lại giữ cấp, Về menu chọn lại chế độ/cấp. Undo/Redo vẫn hoàn tác/làm lại cặp lượt bằng chính Command, không cho bot tính lại khi Redo.
+- Chọn Đấu với máy → Khó rồi chọn thứ tự chơi. Bạn xanh lá ở dưới, bot xanh nước ở trên; không có đồng hồ. Chơi lại giữ cấp và thứ tự; Về menu chọn lại chế độ/cấp/lượt. Undo/Redo vẫn hoàn tác/làm lại cặp lượt bằng chính Command, không cho bot tính lại khi Redo.
 - HardStrategy dùng Minimax: bot tối đa hóa điểm, người tối thiểu hóa điểm. Alpha–Beta bỏ nhánh không thể cải thiện kết quả hiện tại. Tìm sâu dần: hoàn tất đánh giá một hành động trước, rồi hai, tối đa ba (bot → người → bot).
 - Mỗi gốc xét mọi vị trí tường; tầng sâu lấy tường trên các cạnh của đường ngắn hai phe (tối đa 6 cạnh đầu mỗi đường). Sau xếp hạng chỉ giữ tối đa 4 tường tốt và mọi nước đi hợp lệ ở mỗi nút. Đây là Minimax/Alpha–Beta trên cây rút gọn, không vét cạn toàn bộ tường hoặc bảo đảm tối ưu tuyệt đối.
 - Điểm thắng/thua lớn hơn mọi điểm đường đi; ưu tiên thắng sớm và trì hoãn thua. Điểm thường dùng chênh lệch khoảng cách BFS có tính nhảy ở nước đầu, số tường và đe dọa thắng ngay.
@@ -312,3 +312,17 @@ Kiểm tra:
 - `python -m unittest discover -s tests -v` chạy toàn bộ kiểm tra. Test dùng SDL headless; GUI Windows cần thử riêng.
 - Trên Windows: chọn Khó, đi/đặt tường, thử Undo hoặc Về menu khi hiện Bot đang suy nghĩ, Chơi lại giữ cấp, Redo đúng nước cũ, và chuyển Hai người để xác nhận đồng hồ hoạt động lại. Kiểm tra thắng ván vẫn có thể Undo/Redo và đóng cửa sổ luôn được.
 - Bước tiếp theo dự kiến: rà/tinh chỉnh qua chơi thử Windows và hoàn thiện báo cáo, sơ đồ lớp cùng giải thích các pattern; chưa làm trong bước bot khó này.
+
+12.12. Font đi kèm, menu phân cấp và chọn thứ tự chơi
+
+- `assets/fonts/NotoSans-Regular.ttf` là font dùng chung cho mọi màn hình, có dấu tiếng Việt. `OFL.txt` lưu giấy phép SIL Open Font License 1.1, `README.md` ghi nguồn và mã SHA-256. GameView lấy đường dẫn tuyệt đối từ `__file__`, không đọc font hệ thống hoặc tải font lúc chạy.
+- Menu chính theo thứ tự Hai người chơi, Đấu với máy, Thoát. Đấu với máy mở trang Dễ/Trung bình/Khó; sau khi chọn cấp sẽ chọn Chơi trước/Chơi sau. Hai người chơi cũng chọn thứ tự của bên xanh lá ở dưới. Quay lại trở về trang trước. Khi còn ở bất kỳ trang menu nào, đồng hồ và bot đều chưa hoạt động.
+- Người/xanh lá luôn bắt đầu ở dưới màn hình; bot/xanh nước ở trên. Chơi trước: xanh lá mang số 1 và mở đầu. Chơi sau: xanh lá mang số 2, xanh nước mang số 1 và mở đầu. Khi đấu bot, người không thể đi thay trong lượt mở đầu của bot.
+- Số hiển thị tách khỏi chỉ số nội bộ: `players[0]` luôn là người/xanh lá, `players[1]` là bot/xanh nước. Game vẫn giữ hàng xuất phát/đích cũ; GameView phản chiếu trục dọc cho ô, quân, gợi ý, tường và biến đổi ngược click về tọa độ luật. BFS, nhảy và cách chọn nước của bot không đổi.
+- Bảng thông tin bỏ dòng Vị trí; giữ tên phe và Tường còn lại. Hai người vẫn có đồng hồ 30 giây; đấu bot vẫn không có đồng hồ. Màu quân, tường và gợi ý tiếp tục theo phe, độc lập với số 1/2.
+- Chơi lại giữ chế độ, cấp bot và thứ tự đã chọn; xóa cả hai lịch sử như cũ. Nếu chọn chơi sau, bot mở đầu lại ván mới.
+- Undo/Redo vẫn gọi Command theo cặp lượt người → bot. Nếu người chơi sau, nước bot mở đầu được giữ lại: chưa có nước người thì Undo bị mờ; Undo hết các cặp cũng chỉ trở về lượt người ngay sau nước mở đầu đó. Redo không cho bot đánh thêm ngoài các Command đã lưu.
+- MenuState quản lý trang chính; BotLevelState chọn Strategy; TurnOrderState chỉ lưu lựa chọn tạm, khởi tạo ván khi người chọn thứ tự. Các State lượt người/bot/kết thúc và Factory/Strategy/Command tiếp tục dùng chung.
+- Kiểm tra riêng: `python -m unittest tests.test_menu_setup -v`. Bao gồm font khi chạy từ thư mục khác, menu/Quay lại, cả ba cấp và cả hai thứ tự, quân người ở dưới, số hiển thị, đồng hồ hai người, bot mở đầu, Undo/Redo/Chơi lại và click tường sau phản chiếu. Chạy toàn bộ với `python -m unittest discover -s tests -v`.
+- Cần kiểm tra GUI Windows: dấu tiếng Việt không bị ô vuông/cắt chữ; chọn từng cấp và cả hai thứ tự; quân người ở dưới và số đúng; đi quân/đặt tường khớp gợi ý; Chơi lại giữ lựa chọn; Undo/Redo khi chơi sau giữ nước bot mở đầu. Kiểm tra headless không thay thế bước này.
+- Bước tiếp theo dự kiến: nhận kết quả chơi thử Windows, xử lý lỗi giao diện nếu có, rồi hoàn thiện báo cáo/sơ đồ pattern; chưa triển khai thêm tính năng trong bước này.

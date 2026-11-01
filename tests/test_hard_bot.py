@@ -16,6 +16,7 @@ from game.bot.strategy import BotStrategy
 from game.bot.strategy_factory import BotStrategyFactory
 from game.commands import MoveCommand, PlaceWallCommand
 from game.game import Game
+from tests.support import start_game, menu_frames
 from ui.app_controller import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -207,7 +208,7 @@ class HardFlowTests(unittest.TestCase):
         self.controller = GameController(self.game, self.view)
         self.menu = MenuView(self.view)
         self.app = AppController(self.controller, self.menu)
-        self.click(self.menu.hard_bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="hard")
         self.controller.bot_strategy = HardStrategy(max_depth=2, time_budget=2)
 
     # Luôn đóng tác vụ còn sống trước khi giải phóng Pygame.
@@ -222,7 +223,7 @@ class HardFlowTests(unittest.TestCase):
 
     # Nước đi đầu tiên của người xanh lá.
     def first_move(self):
-        self.click((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29))
+        self.click(self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29)))
 
     # Cố định một đoạn ngắn để kiểm tra thao tác hủy giữa lúc bot còn suy nghĩ.
     def begin_partial_search(self):
@@ -285,11 +286,11 @@ class HardFlowTests(unittest.TestCase):
                 self.assertIsInstance(self.app.state, MenuState)
                 self.assertEqual(self.game.command_history, [])
                 self.assertEqual(self.game.redo_history, [])
-        self.click(self.menu.medium_bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="medium")
         self.assertEqual(self.game.bot_level, "medium")
         self.assertIsInstance(self.app.state, HumanTurnState)
         self.click(self.view.menu_button_rect.center)
-        self.click(self.menu.start_button_rect.center)
+        start_game(self.app, self.menu, mode="two_players", level="easy")
         self.now += 30
         self.assertTrue(self.app.update())
         self.assertIsInstance(self.app.state, HumanTurnState)
@@ -300,7 +301,7 @@ class HardFlowTests(unittest.TestCase):
     def test_game_over_state_undo_redo(self):
         self.game.players[0].row = 7
         self.game.players[1].col = 0
-        self.click((self.view.board_x + 4 * 66 + 29, self.view.board_y + 8 * 66 + 29))
+        self.click(self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 8 * 66 + 29)))
         self.assertIsInstance(self.app.state, GameOverState)
         self.assertFalse(self.app.update())
         self.assertFalse(self.app.update_bot())
@@ -315,7 +316,7 @@ class HardFlowTests(unittest.TestCase):
         self.game.players[0].row = 6
         self.game.players[1].col = 0
         before = self.game.capture_state()
-        self.click((self.view.board_x + 4 * 66 + 29, self.view.board_y + 7 * 66 + 29))
+        self.click(self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 7 * 66 + 29)))
         self.finish_bot()
         self.assertIsInstance(self.game.command_history[-1], PlaceWallCommand)
         after = self.game.capture_state()
@@ -337,9 +338,9 @@ class HardFlowTests(unittest.TestCase):
     # Chạy main thật nhiều khung hình, hủy nước bot qua Undo rồi đóng bình thường.
     def test_main_search_and_undo(self):
         events = [
-            [pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=self.menu.hard_bot_button_rect.center)],
+            *menu_frames(self.menu, level="hard"),
             [pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                pos=(self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29))],
+                                pos=self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29)))],
             [pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=self.view.undo_button_rect.center)],
             [pygame.event.Event(pygame.QUIT)],
         ]

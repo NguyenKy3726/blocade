@@ -11,6 +11,7 @@ import pygame
 
 from game.commands import MoveCommand, PlaceWallCommand
 from game.game import Game
+from tests.support import start_game, menu_frames
 from ui.app_controller import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -193,7 +194,7 @@ class UndoFlowTests(unittest.TestCase):
         self.controller = GameController(self.game, self.view)
         self.menu = MenuView(self.view)
         self.app = AppController(self.controller, self.menu)
-        self.click(self.menu.bot_button_rect.center)
+        start_game(self.app, self.menu, mode="bot", level="easy")
 
     # Giải phóng cửa sổ sau mỗi test.
     def tearDown(self):
@@ -206,7 +207,7 @@ class UndoFlowTests(unittest.TestCase):
 
     # Ô đích đầu tiên của người chơi xanh lá.
     def first_move(self):
-        self.click((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29))
+        self.click(self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29)))
 
     # Nút ban đầu bị mờ; sau một vòng, bấm nút phải gọi undo của cả hai Command.
     def test_button_uses_command_undo_and_updates_hints(self):
@@ -225,7 +226,7 @@ class UndoFlowTests(unittest.TestCase):
         self.assertEqual(self.game.current_turn, 0)
         self.assertFalse(self.app.update_bot())
         self.app.draw()
-        center = self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29
+        center = self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29))
         self.assertEqual(tuple(self.view.screen.get_at(center))[:3], (85, 145, 90))
         self.first_move()
         self.assertTrue(self.app.update_bot())
@@ -249,13 +250,13 @@ class UndoFlowTests(unittest.TestCase):
                     self.game.players[0].row = 7
                     self.game.players[1].col = 0
                     before = self.game.capture_state()
-                    self.click((self.view.board_x + 4 * 66 + 29, self.view.board_y + 8 * 66 + 29))
+                    self.click(self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 8 * 66 + 29)))
                     self.assertFalse(self.app.update_bot())
                 else:
                     self.game.players[0].col = 0
                     self.game.players[1].row = 1
                     before = self.game.capture_state()
-                    self.click((self.view.board_x + 66 + 29, self.view.board_y + 29))
+                    self.click(self.view.model_to_screen_point((self.view.board_x + 66 + 29, self.view.board_y + 29)))
                     self.assertTrue(self.app.update_bot())
                 self.assertIs(self.game.winner, self.game.players[winner])
                 self.app.draw()
@@ -273,7 +274,7 @@ class UndoFlowTests(unittest.TestCase):
         self.app.update_bot()
         self.click(self.view.menu_button_rect.center)
         self.assertEqual(self.game.command_history, [])
-        self.click(self.menu.start_button_rect.center)
+        start_game(self.app, self.menu, mode="two_players", level="easy")
         self.assertFalse(self.game.can_undo)
         with patch.object(self.view, "draw_undo_button") as draw:
             self.app.draw()
@@ -281,17 +282,15 @@ class UndoFlowTests(unittest.TestCase):
 
     # Vòng lặp main bỏ click còn lại sau Undo, không tự đánh lại nước vừa lùi.
     def test_main_discards_click_after_undo(self):
-        start = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                   pos=self.menu.bot_button_rect.center)
         human = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
-                                   pos=(self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29))
+                                   pos=self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 66 + 29)))
         undo = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                   pos=self.view.undo_button_rect.center)
         main_path = Path(__file__).resolve().parents[1] / "main.py"
         with patch("game.game.Game", return_value=self.game), \
                 patch("ui.game_view.GameView", return_value=self.view), \
                 patch("ui.controller.GameController", return_value=self.controller), \
-                patch("pygame.event.get", side_effect=[[start], [human], [undo, human],
+                patch("pygame.event.get", side_effect=[*menu_frames(self.menu), [human], [undo, human],
                                                        [pygame.event.Event(pygame.QUIT)]]):
             runpy.run_path(str(main_path), run_name="__main__")
         self.assertEqual([p.position for p in self.game.players], [(0, 4), (8, 4)])

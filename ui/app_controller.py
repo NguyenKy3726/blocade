@@ -54,9 +54,7 @@ class AppController:
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return False
         if self.screen == "menu":
-            menu = self.menu_view
-            rects = (menu.start_button_rect, menu.bot_button_rect,
-                     menu.medium_bot_button_rect, menu.hard_bot_button_rect, menu.exit_button_rect)
+            rects = self.menu_view.navigation_rects(self.state.page)
         else:
             view = self.game_controller.view
             rects = (view.restart_button_rect, view.menu_button_rect)

@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 
 import pygame
 
@@ -15,8 +16,8 @@ class GameView:
         pygame.display.set_caption("Blocade")
         self.clock = pygame.time.Clock()
 
-        # Nạp trực tiếp Arial của Windows để hiển thị dấu tiếng Việt.
-        font_path = r"C:\Windows\Fonts\arial.ttf"
+        # Font đi kèm repo, không phụ thuộc hệ điều hành hoặc thư mục đang chạy.
+        font_path = str(Path(__file__).resolve().parents[1] / "assets" / "fonts" / "NotoSans-Regular.ttf")
         self.title_font = pygame.font.Font(font_path, 34)
         self.title_font.set_bold(True)
         self.font = pygame.font.Font(font_path, 22)
@@ -28,11 +29,12 @@ class GameView:
         self.cell_size = 58
         self.cell_gap = 8
         self.cell_stride = self.cell_size + self.cell_gap
+        self.board_extent = 9 * self.cell_size + 8 * self.cell_gap
 
         self.background_color = (247, 241, 228)
         self.board_frame_color = (198, 155, 98)
         self.cell_colors = [(234, 220, 191), (218, 197, 160)]
-        # Phe 1 xanh lá, phe 2 xanh nước; xem trước hợp lệ dùng màu nhạt hơn.
+        # Giữ màu theo phe; số trên quân phụ thuộc lựa chọn đi trước/đi sau.
         self.player_colors = [(46, 139, 87), (40, 120, 190)]
         self.move_hint_colors = [(85, 145, 90), self.player_colors[1]]
         self.wall_preview_colors = [(132, 204, 158), (133, 192, 235)]
@@ -48,9 +50,31 @@ class GameView:
         surface = font.render(text, True, color)
         self.screen.blit(surface, (x, y))
 
+    # Đảo trục hàng khi vẽ để người/xanh lá (hàng luật 0) nằm dưới màn hình.
+    def model_to_screen_point(self, position):
+        x, y = position
+        return x, self.board_y + self.board_extent - 1 - (y - self.board_y)
+
+    # Phép đối xứng là nghịch đảo của chính nó; dùng khi nhận click vào bàn.
+    def screen_to_model_point(self, position):
+        return self.model_to_screen_point(position)
+
+    # Tâm ô trên màn hình, dùng chung cho quân, chấm gợi ý và kiểm tra chuột.
+    def cell_center(self, row, col):
+        return self.model_to_screen_point((
+            self.board_x + col * self.cell_stride + self.cell_size // 2,
+            self.board_y + row * self.cell_stride + self.cell_size // 2,
+        ))
+
+    # Hình chữ nhật ô sau khi phản chiếu bàn; không đổi tọa độ luật trong Game.
+    def cell_rect(self, row, col):
+        return pygame.Rect(self.board_x + col * self.cell_stride,
+                           self.board_y + self.board_extent - row * self.cell_stride - self.cell_size,
+                           self.cell_size, self.cell_size)
+
     # Đổi vị trí chuột thành ô bàn cờ; trả về None nếu chuột nằm ngoài ô.
     def cell_at_position(self, mouse_position):
-        mouse_x, mouse_y = mouse_position
+        mouse_x, mouse_y = self.screen_to_model_point(mouse_position)
         relative_x = mouse_x - self.board_x
         relative_y = mouse_y - self.board_y
 
@@ -86,14 +110,12 @@ class GameView:
 
         for row in range(9):
             for col in range(9):
-                x = self.board_x + col * self.cell_stride
-                y = self.board_y + row * self.cell_stride
                 color = self.cell_colors[(row + col) % 2]
 
                 pygame.draw.rect(
                     self.screen,
                     color,
-                    (x, y, self.cell_size, self.cell_size),
+                    self.cell_rect(row, col),
                     border_radius=6,
                 )
 
@@ -101,31 +123,23 @@ class GameView:
     def draw_move_hints(self, selected_position, legal_moves, player_index=0):
         if selected_position is not None:
             row, col = selected_position
-            x = self.board_x + col * self.cell_stride
-            y = self.board_y + row * self.cell_stride
 
             pygame.draw.rect(
                 self.screen,
                 (245, 190, 70),
-                (x, y, self.cell_size, self.cell_size),
+                self.cell_rect(row, col),
                 width=4,
                 border_radius=6,
             )
 
         for row, col in legal_moves:
-            center = (
-                self.board_x + col * self.cell_stride + self.cell_size // 2,
-                self.board_y + row * self.cell_stride + self.cell_size // 2,
-            )
+            center = self.cell_center(row, col)
             pygame.draw.circle(self.screen, self.move_hint_colors[player_index], center, 8)
 
     # Vẽ quân cờ tại vị trí hiện tại của mỗi người chơi.
     def draw_players(self, game):
         for index, player in enumerate(game.players):
-            center = (
-                self.board_x + player.col * self.cell_stride + self.cell_size // 2,
-                self.board_y + player.row * self.cell_stride + self.cell_size // 2,
-            )
+            center = self.cell_center(player.row, player.col)
 
             pygame.draw.circle(
                 self.screen,
@@ -135,10 +149,10 @@ class GameView:
             )
             pygame.draw.circle(self.screen, (255, 255, 255), center, 22, 3)
 
-            number = self.small_font.render(str(index + 1), True, (255, 255, 255))
+            number = self.small_font.render(str(game.player_number(index)), True, (255, 255, 255))
             self.screen.blit(number, number.get_rect(center=center))
 
-    # Vẽ lượt chơi, vị trí và số tường còn lại ở bên phải bàn.
+    # Vẽ lượt chơi, tên và số tường; không hiển thị tọa độ nội bộ.
     def draw_info(self, game):
         info_x = 700
 
@@ -161,18 +175,11 @@ class GameView:
                 y,
             )
             self.draw_text(
-                f"Vị trí: ({player.row}, {player.col})",
-                self.small_font,
-                self.text_color,
-                info_x,
-                y + 35,
-            )
-            self.draw_text(
                 f"Tường còn lại: {player.walls_remaining}",
                 self.small_font,
                 self.text_color,
                 info_x,
-                y + 60,
+                y + 35,
             )
 
             # Chế độ bot không hiển thị đồng hồ của cả hai bên.
@@ -181,7 +188,7 @@ class GameView:
                 state = "đang chạy" if index == game.current_turn and game.winner is None else "dừng"
                 self.draw_text(
                     f"Lượt: {seconds}s ({state})",
-                    self.small_font, self.player_colors[index], info_x, y + 85,
+                    self.small_font, self.player_colors[index], info_x, y + 65,
                 )
 
         mode_label = f"Đấu bot {game.bot_level_name}" if game.mode == "bot" else "Hai người chơi"
@@ -264,9 +271,10 @@ class GameView:
         for orientation in ("horizontal", "vertical"):
             anchor = self.wall_anchor_at_position(mouse_position, orientation)
             if anchor is not None:
-                rect = self._wall_rect(orientation, *anchor)
-                distance = (abs(mouse_position[1] - rect.centery) if orientation == "horizontal"
-                            else abs(mouse_position[0] - rect.centerx))
+                rect = self._model_wall_rect(orientation, *anchor)
+                model_mouse = self.screen_to_model_point(mouse_position)
+                distance = (abs(model_mouse[1] - rect.centery) if orientation == "horizontal"
+                            else abs(model_mouse[0] - rect.centerx))
                 candidates.append((distance, orientation, *anchor))
         if not candidates:
             return None
@@ -278,7 +286,7 @@ class GameView:
     # Đổi vị trí chuột thành điểm neo của tường.
     # Người chơi phải đưa chuột vào khe đúng hướng.
     def wall_anchor_at_position(self, mouse_position, orientation):
-        mouse_x, mouse_y = mouse_position
+        mouse_x, mouse_y = self.screen_to_model_point(mouse_position)
         relative_x = mouse_x - self.board_x
         relative_y = mouse_y - self.board_y
 
@@ -308,8 +316,8 @@ class GameView:
 
         return row, col
 
-    # Tính hình chữ nhật của tường để dùng khi vẽ tường thật và hình xem trước.
-    def _wall_rect(self, orientation, row, col):
+    # Vị trí tường theo tọa độ luật, trước khi đổi sang màn hình.
+    def _model_wall_rect(self, orientation, row, col):
         if orientation == "horizontal":
             x = self.board_x + col * self.cell_stride
             y = self.board_y + row * self.cell_stride + self.cell_size
@@ -322,6 +330,12 @@ class GameView:
             height = 2 * self.cell_size + self.cell_gap
 
         return pygame.Rect(x, y, width, height)
+
+    # Phản chiếu tường thật/xem trước giống hệt quân và ô để hình vẽ khớp luật.
+    def _wall_rect(self, orientation, row, col):
+        rect = self._model_wall_rect(orientation, row, col)
+        rect.y = self.board_y + self.board_extent - (rect.y - self.board_y) - rect.height
+        return rect
 
     # Vẽ những bức tường đã được đặt trên bàn cờ.
     def draw_walls(self, game):

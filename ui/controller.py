@@ -51,10 +51,10 @@ class GameController:
         )
 
     # Chơi lại trên cùng cửa sổ và bỏ trạng thái thao tác của ván cũ.
-    def restart_game(self, mode=None, bot_level=None):
+    def restart_game(self, mode=None, bot_level=None, human_first=None):
         self.cancel_search()
         previous_level = self.game.bot_level
-        self.game.reset(mode=mode, bot_level=bot_level)
+        self.game.reset(mode=mode, bot_level=bot_level, human_first=human_first)
         if self.game.bot_level != previous_level:
             self.bot_strategy = BotStrategyFactory.create(self.game.bot_level)
         self.selected_position = None

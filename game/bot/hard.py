@@ -186,7 +186,7 @@ class HardStrategy(BotStrategy):
         if fallback is None:
             return
         best_action = ("move", *fallback.destination)
-        simulation = Game(mode="bot", bot_level="hard")
+        simulation = Game(mode="bot", bot_level="hard", human_first=game.human_first)
         simulation.restore_state(game.capture_state())
         try:
             winning = [cell for cell in game.get_legal_moves() if cell[0] == game.current_player.goal_row]
