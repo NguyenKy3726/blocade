@@ -6,10 +6,11 @@ class MenuView:
     # Nhận giao diện đã khởi tạo để không tạo thêm cửa sổ Pygame.
     def __init__(self, game_view):
         self.view = game_view
-        self.start_button_rect = pygame.Rect(350, 350, 350, 60)
-        self.bot_button_rect = pygame.Rect(350, 440, 350, 60)
-        self.medium_bot_button_rect = pygame.Rect(350, 530, 350, 60)
-        self.exit_button_rect = pygame.Rect(350, 620, 350, 60)
+        self.start_button_rect = pygame.Rect(350, 310, 350, 60)
+        self.bot_button_rect = pygame.Rect(350, 390, 350, 60)
+        self.medium_bot_button_rect = pygame.Rect(350, 470, 350, 60)
+        self.hard_bot_button_rect = pygame.Rect(350, 550, 350, 60)
+        self.exit_button_rect = pygame.Rect(350, 630, 350, 60)
 
     # Vẽ nhãn ở giữa nút và đổi nền khi chuột trỏ vào.
     def draw_button(self, rect, text):
@@ -25,12 +26,13 @@ class MenuView:
     def draw(self):
         self.view.screen.fill(self.view.background_color)
         title = self.view.title_font.render("BLOCADE", True, self.view.text_color)
-        self.view.screen.blit(title, title.get_rect(center=(525, 225)))
+        self.view.screen.blit(title, title.get_rect(center=(525, 185)))
         for x, color in zip((495, 555), self.view.player_colors):
-            pygame.draw.circle(self.view.screen, color, (x, 285), 16)
+            pygame.draw.circle(self.view.screen, color, (x, 245), 16)
         self.draw_button(self.start_button_rect, "Hai người chơi")
         self.draw_button(self.bot_button_rect, "Đấu bot dễ")
         self.draw_button(self.medium_bot_button_rect, "Đấu bot trung bình")
+        self.draw_button(self.hard_bot_button_rect, "Đấu bot khó")
         self.draw_button(self.exit_button_rect, "Thoát")
         label = self.view.small_font.render("Hai người: 30 giây/lượt · Đấu bot: không đồng hồ",
                                            True, self.view.text_color)

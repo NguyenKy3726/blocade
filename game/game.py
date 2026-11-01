@@ -22,7 +22,7 @@ class Game:
         new_level = self.bot_level if bot_level is None else bot_level
         if new_mode not in ("two_players", "bot"):
             raise ValueError("Chế độ chơi không hợp lệ")
-        if new_level not in ("easy", "medium"):
+        if new_level not in ("easy", "medium", "hard"):
             raise ValueError("Cấp bot không hợp lệ")
         self.mode = new_mode
         self.bot_level = new_level
@@ -44,7 +44,7 @@ class Game:
     # Tên hiển thị dùng chung cho quân bot và nhãn chế độ trên giao diện.
     @property
     def bot_level_name(self):
-        return {"easy": "dễ", "medium": "trung bình"}[self.bot_level]
+        return {"easy": "dễ", "medium": "trung bình", "hard": "khó"}[self.bot_level]
 
     # Chụp dữ liệu có thể đổi trong hành động; tạo bản sao để lịch sử không bị ghi đè.
     def capture_state(self):

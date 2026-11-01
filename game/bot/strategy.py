@@ -8,6 +8,10 @@ class BotStrategy(ABC):
     def __init__(self, choose=choice):
         self.choose = choose
 
+    # Bot dễ/trung bình chạy trực tiếp; bot khó có thể cung cấp generator chia khung hình.
+    def start_search(self, game):
+        return None
+
     # Trả về Command đã chọn, không tự execute hoặc ghi lịch sử.
     @abstractmethod
     def choose_command(self, game):

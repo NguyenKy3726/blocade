@@ -207,7 +207,7 @@ Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ t�
 - Trong chế độ hai người, mỗi người có đồng hồ riêng, đếm ngược 30 giây cho mỗi lượt. Chỉ bên đang tới lượt chạy đồng hồ; bên chờ giữ nguyên số hiển thị tới lượt tiếp theo.
 - Đi quân hoặc đặt tường hợp lệ kết thúc lượt. Khi nhận lượt mới, đồng hồ của người đó được đặt lại thành 30 giây.
 - Hết giờ thì mất lượt, không bị xử thua và không bị trừ tường. Nước đi hoặc tường không hợp lệ không đặt lại đồng hồ.
-- Khi có người thắng, cả hai đồng hồ dừng. Nút Chơi lại ở bên phải bàn dùng được cả trong ván và sau khi thắng: đưa quân về vị trí đầu, xóa tường và màu sở hữu, cấp lại 10 tường và 30 giây mỗi phe, xanh lá đi trước, xóa lựa chọn cũ và thông báo hết giờ. Menu đã có Hai người chơi, Đấu bot dễ, Đấu bot trung bình và Thoát; nút Về menu trên bàn cờ kết thúc luồng ván hiện tại, vào lại bắt đầu ván mới.
+- Khi có người thắng, cả hai đồng hồ dừng. Nút Chơi lại ở bên phải bàn dùng được cả trong ván và sau khi thắng: đưa quân về vị trí đầu, xóa tường và màu sở hữu, cấp lại 10 tường và 30 giây mỗi phe, xanh lá đi trước, xóa lựa chọn cũ và thông báo hết giờ. Menu đã có Hai người chơi, Đấu bot dễ/trung bình/khó và Thoát; nút Về menu trên bàn cờ kết thúc luồng ván hiện tại, vào lại bắt đầu ván mới.
 - Đưa chuột vào khe ngang/dọc để xem trước; click trái để xác nhận đặt tường. Tại giao điểm, hướng theo đường giữa khe gần chuột hơn; nếu bằng nhau thì chưa chọn hướng, hãy dịch chuột vào khe muốn đặt.
 - Đặt tường hoàn toàn bằng chuột; H/V/Esc không thay đổi hướng hoặc chế độ chơi.
 - Hai phe dùng màu xanh lá (người chơi 1) và xanh nước (người chơi 2), áp dụng cho quân và tường đã đặt.
@@ -235,10 +235,10 @@ Mục này ưu tiên hơn thứ tự cũ khi có khác nhau:
 1. Menu (đã hoàn thành): mở ứng dụng ở menu, vào Hai người chơi, Chơi lại/Về menu cả trước và sau thắng; không tính giờ ở menu. Vào lại bắt đầu ván mới, không tiếp tục ván cũ. Lựa chọn Đấu bot dễ đã được thêm khi bot hoạt động.
 2. Bot dễ (đã hoàn thành): lựa chọn Đấu bot dễ trên menu, dùng chung luật/Command, không có đồng hồ; người đi rồi bot đáp trả.
 3. Undo/Redo đấu bot (đã hoàn thành): bổ sung trạng thái trước hành động, lịch sử và hoàn tác cặp lượt theo quy tắc trên; xóa lịch sử khi Chơi lại hoặc bắt đầu ván mới.
-4. Bot trung bình đã hoàn thành với Strategy/Factory; bước tiếp theo là bot khó với thuật toán tìm kiếm sâu hơn.
-5. Hoàn thiện báo cáo/sơ đồ OOP/pattern; cân nhắc State khi luồng thực tế phức tạp hơn.
+4. Bot dễ/trung bình/khó đã hoàn thành với Strategy/Factory; cấp khó dùng tìm kiếm sâu có giới hạn.
+5. State đã quản lý menu/lượt người/lượt bot/kết thúc. Bước tiếp theo dự kiến là rà trải nghiệm trên Windows, rồi hoàn thiện báo cáo/sơ đồ OOP/pattern.
 
-Luồng menu hiện dùng `AppController` với hai trạng thái menu/game và `MenuView` dùng cùng cửa sổ/font với `GameView`; chưa triển khai đầy đủ State pattern. Vẫn không thêm thông báo lý do hành động bị từ chối theo lựa chọn của người chơi.
+AppController là context của State pattern; ui/states.py quản lý MenuState, HumanTurnState, BotTurnState và GameOverState. MenuView dùng cùng cửa sổ/font với GameView. Vẫn không thêm thông báo lý do hành động bị từ chối theo lựa chọn của người chơi.
 
 12.7. Cách chơi với bot dễ hiện tại
 
@@ -248,7 +248,7 @@ Luồng menu hiện dùng `AppController` với hai trạng thái menu/game và 
 - `PathFinder.shortest_distance` tính số cạnh tới hàng đích, bỏ qua vị trí quân. Đây là ước lượng để chọn trong các nước đã hợp lệ, không thay thế luật nhảy của Game.
 - Bot chạy sau khi xử lý các sự kiện của khung hình, không dùng sleep/thread. Trong lượt bot, bỏ click đi quân/đặt tường của người; Chơi lại/Về menu vẫn được ưu tiên.
 - Chơi lại giữ chế độ bot, xanh lá bắt đầu ván mới. Về menu rồi chọn Hai người chơi sẽ bật lại đồng hồ 30 giây/lượt.
-- Kiến trúc hiện có BotStrategy, EasyStrategy, MediumStrategy và BotStrategyFactory để chọn cấp. Undo đã có theo quy tắc mục 12.6 và cách dùng mục 12.8.
+- Kiến trúc hiện có BotStrategy, EasyStrategy, MediumStrategy, HardStrategy và BotStrategyFactory để chọn cấp. Undo đã có theo quy tắc mục 12.6 và cách dùng mục 12.8.
 - Kiểm tra riêng bot: `python -m unittest discover -s tests -p test_easy_bot.py -v` trong repo. Chạy toàn bộ test với `python -m unittest discover -s tests -v`. Test giao diện dùng SDL headless; vẫn cần chơi thử trên Windows.
 
 12.8. Undo bằng Command pattern
@@ -277,8 +277,8 @@ Luồng menu hiện dùng `AppController` với hai trạng thái menu/game và 
 
 12.10. Bot trung bình và Strategy/Factory
 
-- Menu có Đấu bot trung bình. Người là xanh lá đi trước; bot xanh nước. Hai cấp bot đều không có đồng hồ, dùng cùng luật đi/nhảy, đặt tường, BFS và lịch sử Command.
-- BotStrategy định nghĩa choose_command(game). EasyStrategy và MediumStrategy thực hiện giao diện này. BotStrategyFactory.create(level) tạo chiến lược theo easy/medium; cấp không hỗ trợ bị từ chối, không tự thay bằng cấp khác. Game giữ bot_level, controller giữ Strategy được Factory tạo.
+- Menu có Đấu bot trung bình. Người là xanh lá đi trước; bot xanh nước. Cả ba cấp bot đều không có đồng hồ, dùng cùng luật đi/nhảy, đặt tường, BFS và lịch sử Command.
+- BotStrategy định nghĩa choose_command(game). EasyStrategy và MediumStrategy thực hiện giao diện này. BotStrategyFactory.create(level) hiện tạo chiến lược theo easy/medium/hard; cấp không hỗ trợ bị từ chối, không tự thay bằng cấp khác. Game giữ bot_level, controller giữ Strategy được Factory tạo.
 - MediumStrategy ưu tiên nước tới đích ngay. Nếu chưa thắng được, thử các nước đi hợp lệ và tối đa 128 vị trí/hướng tường khi còn tường.
 - PathFinder.distances_to_goal chạy BFS ngược từ cả hàng đích để tính bản đồ đường còn lại. Đánh giá số lượt dùng nước đầu hợp lệ từ Game, vì vậy có tính nhảy thẳng/chéo ở bước đầu; phần đường sau đó là ước lượng qua tường, không mô phỏng toàn bộ quân/lượt tương lai.
 - Xếp hạng: ưu tiên phương án không cho người thắng ngay ở lượt tới; sau đó tối đa hóa khoảng cách người trừ khoảng cách bot. Đặt tường bị trừ 0.5 điểm để tránh phí tường khi lợi ích ngang nhau. Các phương án ngang điểm được chọn ngẫu nhiên.
@@ -287,4 +287,28 @@ Luồng menu hiện dùng `AppController` với hai trạng thái menu/game và 
 - Chơi lại giữ cấp đã chọn; về menu có thể chọn lại dễ/trung bình/hai người. Undo/Redo lùi/làm lại cả tường do bot đặt và nước người. Redo không gọi lại Strategy, nên giữ đúng tường/nước bot cũ.
 - Cấp này đánh giá một hành động và mối đe dọa thắng ngay, chưa dùng Minimax/Alpha–Beta; không bảo đảm luôn chọn nước tối ưu hoặc chặn được mọi đe dọa.
 - Test riêng: `python -m unittest discover -s tests -p test_medium_bot.py -v`. Trên Windows thử chọn Trung bình, tiến gần hàng đích để xem bot chặn, đặt tường cản bot, Undo/Redo tường xanh, Chơi lại giữ cấp và chuyển về Hai người kiểm tra đồng hồ.
-- Bước tiếp theo dự kiến: bot khó; chưa triển khai trong bước này.
+- Bot khó đã được thêm ở mục 12.11; trung bình giữ thuật toán đánh giá một hành động như trên.
+
+12.11. Bot khó và đầy đủ các pattern đã thống nhất
+
+- Menu có Đấu bot khó. Bạn xanh lá đi trước, bot xanh nước; không có đồng hồ. Chơi lại giữ cấp, Về menu chọn lại chế độ/cấp. Undo/Redo vẫn hoàn tác/làm lại cặp lượt bằng chính Command, không cho bot tính lại khi Redo.
+- HardStrategy dùng Minimax: bot tối đa hóa điểm, người tối thiểu hóa điểm. Alpha–Beta bỏ nhánh không thể cải thiện kết quả hiện tại. Tìm sâu dần: hoàn tất đánh giá một hành động trước, rồi hai, tối đa ba (bot → người → bot).
+- Mỗi gốc xét mọi vị trí tường; tầng sâu lấy tường trên các cạnh của đường ngắn hai phe (tối đa 6 cạnh đầu mỗi đường). Sau xếp hạng chỉ giữ tối đa 4 tường tốt và mọi nước đi hợp lệ ở mỗi nút. Đây là Minimax/Alpha–Beta trên cây rút gọn, không vét cạn toàn bộ tường hoặc bảo đảm tối ưu tuyệt đối.
+- Điểm thắng/thua lớn hơn mọi điểm đường đi; ưu tiên thắng sớm và trì hoãn thua. Điểm thường dùng chênh lệch khoảng cách BFS có tính nhảy ở nước đầu, số tường và đe dọa thắng ngay.
+- Mô phỏng dùng Game riêng, thực thi/undo Command trên bản sao; không thay đổi bàn, màu, thời gian hay lịch sử thật. Khi chọn xong chỉ tạo một Command gắn với ván thật để controller execute.
+- Ngân sách mặc định: tối đa 512 nút Minimax, 0.6 giây tính theo thời gian thực và độ sâu 3. Không phải mọi lượt đều đạt độ sâu 3. Hết ngân sách giữ nước của tầng đã hoàn tất; nếu chưa hoàn tất tầng đầu, dùng nước hợp lệ ưu tiên về đích. Nước thắng ngay được nhận trước khi mở cây.
+- HardStrategy.start_search trả generator: yield None để nhường UI, cuối cùng yield Command đã chọn. Controller đặt mục tiêu khoảng 8ms công việc mỗi khung hình, không dùng sleep/thread; một đơn vị nhỏ có thể vượt nhẹ mục tiêu tùy máy. Đây là ngân sách tính toán, không phải đồng hồ giới hạn lượt người.
+- Undo/Redo, Chơi lại, Về menu, đóng cửa sổ hoặc rời BotTurnState đều đóng generator đang chạy. Vì chỉ dùng bản sao, tác vụ bị hủy không để lại nước đi muộn trên ván thật.
+- last_stats ghi nodes, cutoffs, completed_depth, limited để chẩn đoán; không hiển thị thông số kỹ thuật trong luồng chơi.
+
+Vai trò các pattern:
+- Command: MoveCommand/PlaceWallCommand có execute/undo/redo, là đơn vị hành động và lịch sử.
+- Strategy: EasyStrategy/MediumStrategy/HardStrategy cùng giao diện BotStrategy; cấp khó thêm tìm kiếm tăng dần cho UI.
+- Factory: BotStrategyFactory tạo đúng Strategy từ easy/medium/hard, từ chối cấp không hỗ trợ.
+- State: AppState định nghĩa xử lý/cập nhật/vẽ; MenuState chỉ chọn chế độ, HumanTurnState cập nhật lượt người/đồng hồ, BotTurnState mới được tiến tìm kiếm, GameOverState dừng giờ và đánh tiếp nhưng giữ Undo/Redo/điều hướng. PlayingState dùng chung cách vẽ và điều hướng trong ván; AppController đồng bộ State sau hành động, hết giờ hoặc hoàn tác.
+
+Kiểm tra:
+- `python -m unittest discover -s tests -p test_hard_bot.py -v` kiểm tra thuật toán, giới hạn, hủy tác vụ và các State. Kiểm tra Alpha–Beta với vét cạn dùng cùng cây chỉ đi quân để có đối chứng đầy đủ, không đánh đồng với mọi cây có tường.
+- `python -m unittest discover -s tests -v` chạy toàn bộ kiểm tra. Test dùng SDL headless; GUI Windows cần thử riêng.
+- Trên Windows: chọn Khó, đi/đặt tường, thử Undo hoặc Về menu khi hiện Bot đang suy nghĩ, Chơi lại giữ cấp, Redo đúng nước cũ, và chuyển Hai người để xác nhận đồng hồ hoạt động lại. Kiểm tra thắng ván vẫn có thể Undo/Redo và đóng cửa sổ luôn được.
+- Bước tiếp theo dự kiến: rà/tinh chỉnh qua chơi thử Windows và hoàn thiện báo cáo, sơ đồ lớp cùng giải thích các pattern; chưa làm trong bước bot khó này.

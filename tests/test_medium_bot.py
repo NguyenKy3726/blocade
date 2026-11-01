@@ -36,7 +36,7 @@ class MediumBotTests(unittest.TestCase):
         self.assertIsInstance(self.strategy, BotStrategy)
         self.assertIsInstance(EasyStrategy(), BotStrategy)
         with self.assertRaises(ValueError):
-            BotStrategyFactory.create("hard")
+            BotStrategyFactory.create("unknown")
 
     # Bản đồ BFS khớp BFS một nguồn tại mọi ô, cả khi có vùng không tới được đích.
     def test_distance_map_matches_single_source_bfs(self):

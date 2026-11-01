@@ -243,7 +243,9 @@ class GameView:
             validity = "hợp lệ" if is_valid else "không hợp lệ"
             self.draw_text(f"Tường {direction}: {validity}", self.small_font,
                            self.text_color, 700, preview_y)
-        elif game.winner is None and not game.is_bot_turn:
+        elif game.is_bot_turn:
+            self.draw_text("Bot đang suy nghĩ…", self.small_font, self.text_color, 700, preview_y)
+        elif game.winner is None:
             self.draw_text("Đưa chuột vào khe ngang/dọc.", self.small_font,
                            self.text_color, 700, preview_y)
         if game.winner is None and not game.is_bot_turn:

@@ -1,3 +1,5 @@
+from time import perf_counter
+
 import pygame
 
 from game.commands import MoveCommand, PlaceWallCommand
@@ -12,6 +14,15 @@ class GameController:
         self.view = view
         self.selected_position = None
         self.bot_strategy = BotStrategyFactory.create(game.bot_level)
+        self.pending_search = None
+        self.search_board = None
+
+    # Hủy generator cũ trước khi Undo/Redo, reset hoặc rời ván; chỉ bỏ bản sao tìm kiếm.
+    def cancel_search(self):
+        if self.pending_search is not None:
+            self.pending_search.close()
+        self.pending_search = None
+        self.search_board = None
 
     # Nhận diện click trái trong nút Chơi lại, tách khỏi thao tác bàn cờ.
     def is_restart_event(self, event):
@@ -41,6 +52,7 @@ class GameController:
 
     # Chơi lại trên cùng cửa sổ và bỏ trạng thái thao tác của ván cũ.
     def restart_game(self, mode=None, bot_level=None):
+        self.cancel_search()
         previous_level = self.game.bot_level
         self.game.reset(mode=mode, bot_level=bot_level)
         if self.game.bot_level != previous_level:
@@ -54,16 +66,36 @@ class GameController:
             self.selected_position = None
         return expired
 
-    # Thực hiện tối đa một nước bot sau khi xử lý các sự kiện của khung hình.
+    # Bot khó dùng khoảng 8ms mỗi khung hình; các cấp khác giữ cách chạy trực tiếp.
     def play_bot_turn(self):
         if not self.game.is_bot_turn:
+            self.cancel_search()
             return False
-        command = self.bot_strategy.choose_command(self.game)
-        return command.execute() if command is not None else False
+        if self.pending_search is not None and self.search_board is not self.game.board:
+            self.cancel_search()
+        if self.pending_search is None:
+            self.pending_search = self.bot_strategy.start_search(self.game)
+            self.search_board = self.game.board
+            if self.pending_search is None:
+                command = self.bot_strategy.choose_command(self.game)
+                return command.execute() if command is not None else False
+        started = perf_counter()
+        while True:
+            try:
+                command = next(self.pending_search)
+            except StopIteration:
+                self.cancel_search()
+                return False
+            if command is not None:
+                self.cancel_search()
+                return command.execute()
+            if perf_counter() - started >= 0.008:
+                return False
 
     # Xử lý đóng cửa sổ, chơi lại và các hành động bằng chuột.
     def handle_event(self, event):
         if event.type == pygame.QUIT:
+            self.cancel_search()
             return False
 
         # Nút vẫn dùng được sau thắng ván hoặc tại đúng mốc hết giờ.
@@ -72,11 +104,13 @@ class GameController:
             return True
 
         if self.is_undo_event(event):
+            self.cancel_search()
             self.game.undo_round()
             self.selected_position = None
             return True
 
         if self.is_redo_event(event):
+            self.cancel_search()
             self.game.redo_round()
             self.selected_position = None
             return True

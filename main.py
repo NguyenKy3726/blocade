@@ -15,7 +15,7 @@ menu_view = MenuView(view)
 app = AppController(controller, menu_view)
 running = True
 
-# Điều hướng trước; khi vào ván, controller tạo và thực thi Command từ click.
+# State điều phối menu/lượt/kết thúc; controller tạo Command từ click trong ván.
 while running:
     # Menu không tính giờ. Trong ván, cập nhật giờ trước các thao tác.
     expired = app.update()
@@ -31,7 +31,7 @@ while running:
     if not running:
         break
 
-    # Bot đáp trả sau toàn bộ click: người không thể click thay quân bot trong lượt đó.
+    # Sau click, BotTurnState tiến một đoạn tìm kiếm hoặc đáp trả; vẫn nhường UI mỗi khung hình.
     app.update_bot()
     # Vẽ menu hoặc bàn cờ; chỉ tính hình xem trước khi đang trong ván.
     app.draw()

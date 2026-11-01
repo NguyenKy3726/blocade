@@ -1,28 +1,62 @@
 import pygame
 
+from ui.states import MenuState, HumanTurnState, BotTurnState, GameOverState
 
-# Điều hướng giữa menu và ván; chưa cần các lớp State riêng cho hai màn hình.
+
+# Context của State pattern: giao công việc cho trạng thái hiện tại.
 class AppController:
-    # Khởi đầu ở menu, giữ lại controller ván để tái sử dụng cùng cửa sổ.
+    # Khởi đầu ở menu, dùng chung controller và cửa sổ cho mọi trạng thái.
     def __init__(self, game_controller, menu_view):
         self.game_controller = game_controller
         self.menu_view = menu_view
-        self.screen = "menu"
+        self.state = MenuState()
 
-    # Chỉ tính giờ khi đang ở bàn cờ; ở menu không để người chơi mất lượt.
+    # Tên màn hình giữ giao diện cũ; các lượt được phân biệt bằng đối tượng State.
+    @property
+    def screen(self):
+        return "menu" if isinstance(self.state, MenuState) else "game"
+
+    # Cho phép chuyển màn hình rõ ràng, không đưa chuỗi trạng thái lạ vào ứng dụng.
+    @screen.setter
+    def screen(self, value):
+        if value == "menu":
+            self.change_state(MenuState())
+        elif value == "game":
+            self.change_state(HumanTurnState())
+            self.sync_state()
+        else:
+            raise ValueError("Màn hình không hợp lệ")
+
+    # Rời lượt bot hủy tác vụ cũ, để không có nước đáp trả sau Undo hoặc về menu.
+    def change_state(self, state):
+        if isinstance(self.state, BotTurnState) and not isinstance(state, BotTurnState):
+            self.game_controller.cancel_search()
+        self.state = state
+
+    # Đồng bộ sau Command, hết giờ, Undo/Redo hoặc reset; menu chỉ đổi khi chọn chế độ.
+    def sync_state(self):
+        if isinstance(self.state, MenuState):
+            return
+        game = self.game_controller.game
+        target = GameOverState if game.winner is not None else (BotTurnState if game.is_bot_turn else HumanTurnState)
+        if not isinstance(self.state, target):
+            self.change_state(target())
+
+    # State quyết định có cập nhật giờ hay không.
     def update(self):
-        if self.screen == "game":
-            return self.game_controller.update()
-        return False
+        self.sync_state()
+        expired = self.state.update(self)
+        self.sync_state()
+        return expired
 
-    # Nhận diện nút đổi màn hình/chơi lại để bỏ các click cũ sau điều hướng.
+    # Nhận diện nút điều hướng để main bỏ các sự kiện cũ sau khi đổi trạng thái.
     def is_navigation_event(self, event):
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return False
         if self.screen == "menu":
-            rects = (self.menu_view.start_button_rect, self.menu_view.bot_button_rect,
-                     self.menu_view.medium_bot_button_rect,
-                     self.menu_view.exit_button_rect)
+            menu = self.menu_view
+            rects = (menu.start_button_rect, menu.bot_button_rect,
+                     menu.medium_bot_button_rect, menu.hard_bot_button_rect, menu.exit_button_rect)
         else:
             view = self.game_controller.view
             rects = (view.restart_button_rect, view.menu_button_rect)
@@ -30,43 +64,24 @@ class AppController:
                 rects += (view.undo_button_rect, view.redo_button_rect)
         return any(rect.collidepoint(event.pos) for rect in rects)
 
-    # Ưu tiên đóng cửa sổ và nút điều hướng trước khi giao sự kiện cho ván.
+    # Đóng cửa sổ luôn được ưu tiên, kể cả khi bot đang tìm kiếm.
     def handle_event(self, event):
         if event.type == pygame.QUIT:
+            self.game_controller.cancel_search()
             return False
-        left_click = event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
-        if self.screen == "menu":
-            if left_click and self.menu_view.exit_button_rect.collidepoint(event.pos):
-                return False
-            if left_click and self.menu_view.start_button_rect.collidepoint(event.pos):
-                self.game_controller.restart_game(mode="two_players")
-                self.screen = "game"
-            elif left_click and self.menu_view.bot_button_rect.collidepoint(event.pos):
-                self.game_controller.restart_game(mode="bot", bot_level="easy")
-                self.screen = "game"
-            elif left_click and self.menu_view.medium_bot_button_rect.collidepoint(event.pos):
-                self.game_controller.restart_game(mode="bot", bot_level="medium")
-                self.screen = "game"
-            return True
-        if left_click and self.game_controller.view.menu_button_rect.collidepoint(event.pos):
-            self.game_controller.selected_position = None
-            self.game_controller.game.command_history.clear()
-            self.game_controller.game.redo_history.clear()
-            self.screen = "menu"
-            return True
-        return self.game_controller.handle_event(event)
+        self.sync_state()
+        running = self.state.handle_event(self, event)
+        self.sync_state()
+        return running
 
-    # Bot không chạy ở menu; nút Về menu/Chơi lại được xử lý trước nước đáp trả.
+    # State chỉ cho bot chạy trong BotTurnState, không chạy ở menu hoặc sau thắng.
     def update_bot(self):
-        if self.screen == "game":
-            return self.game_controller.play_bot_turn()
-        return False
+        self.sync_state()
+        played = self.state.update_bot(self)
+        self.sync_state()
+        return played
 
-    # Vẽ đúng màn hình; xem trước tường chỉ được tính khi đang trong ván.
+    # Giao State hiện tại chọn menu hoặc bàn cờ để vẽ.
     def draw(self):
-        if self.screen == "menu":
-            self.menu_view.draw()
-            return
-        controller = self.game_controller
-        preview = controller.get_wall_preview(pygame.mouse.get_pos())
-        controller.view.draw(controller.game, controller.selected_position, preview)
+        self.sync_state()
+        self.state.draw(self)
