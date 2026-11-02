@@ -53,10 +53,10 @@ class GameView:
         self.move_hint_colors = [(85, 145, 90), self.player_colors[1]]
         self.wall_preview_colors = [(132, 204, 158), (133, 192, 235)]
         self.text_color = self.theme.text_color
-        self.restart_button_rect = pygame.Rect(700, 650, 250, 52)
-        self.menu_button_rect = pygame.Rect(700, 720, 250, 52)
-        self.undo_button_rect = pygame.Rect(700, 600, 120, 40)
-        self.redo_button_rect = pygame.Rect(830, 600, 120, 40)
+        self.restart_button_rect = pygame.Rect(700, 615, 250, 52)
+        self.menu_button_rect = pygame.Rect(700, 675, 250, 52)
+        self.undo_button_rect = pygame.Rect(700, 565, 120, 40)
+        self.redo_button_rect = pygame.Rect(830, 565, 120, 40)
         self.sound_button_rect = pygame.Rect(770, 32, 160, 48)
         self.victory_restart_button_rect = pygame.Rect(140, 425, 200, 52)
         self.victory_menu_button_rect = pygame.Rect(365, 425, 220, 52)
@@ -301,15 +301,8 @@ class GameView:
         self.draw_move_hints(active_position, legal_moves, game.current_turn)
         self.draw_players(game)
         self.draw_info(game)
-        preview_y = 530 if game.mode == "bot" else 580
-        if wall_preview is not None:
-            orientation, _, _, is_valid = wall_preview
-            direction = "ngang" if orientation == "horizontal" else "dọc"
-            validity = "hợp lệ" if is_valid else "không hợp lệ"
-            self.draw_text(f"Tường {direction}: {validity}", self.small_font,
-                           self.text_color, 700, preview_y)
-        elif game.is_bot_turn:
-            self.draw_text("Bot đang suy nghĩ…", self.small_font, self.text_color, 700, preview_y)
+        if game.is_bot_turn:
+            self.draw_text("Bot đang suy nghĩ…", self.small_font, self.text_color, 700, 530)
 
         if game.mode == "bot":
             self.draw_undo_button(game.can_undo)
