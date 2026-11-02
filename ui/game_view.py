@@ -43,11 +43,15 @@ class GameView:
         self.background_color = (237, 223, 200)
         self.board_frame_color = (146, 101, 59)
         self.cell_colors = [(235, 205, 163), (216, 180, 131)]
+        # Tô nhẹ hàng đích theo màu của hai phe để dễ nhận ra hướng đi.
+        self.goal_row_colors = {
+            0: [(229, 239, 220), (219, 232, 207)],
+            8: [(224, 235, 244), (212, 226, 238)],
+        }
         # Quân và tường nhuộm màu theo phe; không còn vẽ số trên quân.
         self.player_colors = [(46, 139, 87), (40, 120, 190)]
         self.move_hint_colors = [(85, 145, 90), self.player_colors[1]]
         self.wall_preview_colors = [(132, 204, 158), (133, 192, 235)]
-        self.invalid_wall_color = (190, 65, 55)
         self.text_color = self.theme.text_color
         self.restart_button_rect = pygame.Rect(700, 650, 250, 52)
         self.menu_button_rect = pygame.Rect(700, 720, 250, 52)
@@ -159,7 +163,9 @@ class GameView:
             for row in range(9):
                 for col in range(9):
                     rect = self.cell_rect(row, col).move(-origin[0], -origin[1])
-                    color = self.cell_colors[(row + col) % 2]
+                    color = self.goal_row_colors.get(
+                        row, self.cell_colors
+                    )[(row + col) % 2]
                     self.board_surface.blit(self.theme.wood(rect.size, color,
                                                             seed=(row * 9 + col) % 7, radius=5), rect)
                     pygame.draw.rect(self.board_surface, shade(color, 18), rect, 1, border_radius=5)
@@ -395,17 +401,15 @@ class GameView:
             wall_rect = self._wall_rect(orientation, row, col)
             self.theme.wall(self.screen, wall_rect, wall_color, self.motion.wall_alpha((orientation, row, col)))
 
-    # Tường hợp lệ dùng màu phe nhạt hơn; tường không hợp lệ luôn màu đỏ.
+    # Chỉ vẽ tường xem trước khi vị trí hợp lệ; vị trí sai được ẩn hoàn toàn.
     def draw_wall_preview(self, wall_preview, player_index=0):
         if wall_preview is None:
             return
 
         orientation, row, col, is_valid = wall_preview
+        if not is_valid:
+            return
+
         wall_rect = self._wall_rect(orientation, row, col)
-
-        if is_valid:
-            color = self.wall_preview_colors[player_index]
-        else:
-            color = self.invalid_wall_color
-
+        color = self.wall_preview_colors[player_index]
         self.theme.wall(self.screen, wall_rect, color)

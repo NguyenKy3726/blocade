@@ -171,4 +171,6 @@ class GameController:
         wall = self.view.wall_at_position(mouse_position)
         if wall is None:
             return None
-        return (*wall, self.game.can_place_wall_current_player(*wall))
+        if not self.game.can_place_wall_current_player(*wall):
+            return None
+        return (*wall, True)
