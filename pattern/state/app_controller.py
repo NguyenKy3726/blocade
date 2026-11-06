@@ -59,8 +59,11 @@ class AppController:
             view = self.game_controller.view
             game = self.game_controller.game
             rects = (view.restart_rect(game), view.menu_rect(game))
-            if self.game_controller.game.mode == "bot":
-                rects += (view.undo_button_rect, view.redo_button_rect)
+            if game.mode == "bot" and game.winner is None:
+                if game.can_undo:
+                    rects += (view.undo_button_rect,)
+                if game.can_redo:
+                    rects += (view.redo_button_rect,)
         return any(rect.collidepoint(event.pos) for rect in
                    (*rects, self.game_controller.view.sound_button_rect))
 
@@ -71,9 +74,9 @@ class AppController:
         if self.screen == "menu":
             return self.menu_view.navigation_rects(self.state.page)
         rects = [view.restart_rect(game), view.menu_rect(game)]
-        if game.can_undo:
+        if game.winner is None and game.can_undo:
             rects.append(view.undo_button_rect)
-        if game.can_redo:
+        if game.winner is None and game.can_redo:
             rects.append(view.redo_button_rect)
         return rects
 

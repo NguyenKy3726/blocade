@@ -39,6 +39,22 @@ class GameView:
         self.cell_gap = 8
         self.cell_stride = self.cell_size + self.cell_gap
         self.board_extent = 9 * self.cell_size + 8 * self.cell_gap
+        self.info_panel_rect = pygame.Rect(
+            680, self.board_y - 18, 325, self.board_extent + 36
+        )
+        self.player_card_top = 238
+        self.player_card_height = 118
+        self.player_card_gap = 27
+
+        second_card_bottom = (
+            self.player_card_top + 2 * self.player_card_height + self.player_card_gap
+        )
+        history_y = second_card_bottom + self.player_card_gap
+        self.undo_button_rect = pygame.Rect(700, history_y, 120, 40)
+        self.redo_button_rect = pygame.Rect(830, history_y, 120, 40)
+        self.restart_button_rect = pygame.Rect(700, history_y + 50, 250, 52)
+        self.menu_button_rect = pygame.Rect(700, history_y + 110, 250, 52)
+        self.sound_button_rect = pygame.Rect(770, 32, 160, 48)
 
         self.background_color = (237, 223, 200)
         self.board_frame_color = (146, 101, 59)
@@ -53,13 +69,6 @@ class GameView:
         self.move_hint_colors = [(85, 145, 90), self.player_colors[1]]
         self.wall_preview_colors = [(132, 204, 158), (133, 192, 235)]
         self.text_color = self.theme.text_color
-        self.restart_button_rect = pygame.Rect(700, 615, 250, 52)
-        self.menu_button_rect = pygame.Rect(700, 675, 250, 52)
-        self.undo_button_rect = pygame.Rect(700, 565, 120, 40)
-        self.redo_button_rect = pygame.Rect(830, 565, 120, 40)
-        self.sound_button_rect = pygame.Rect(770, 32, 160, 48)
-        self.victory_restart_button_rect = pygame.Rect(140, 425, 200, 52)
-        self.victory_menu_button_rect = pygame.Rect(365, 425, 220, 52)
 
     # Nền gỗ được cache; các màn hình chỉ blit lại, không tạo vân mỗi frame.
     def draw_background(self):
@@ -68,11 +77,11 @@ class GameView:
 
     # Dùng vùng nút thật đang hiển thị, kể cả khi có khung chiến thắng.
     def restart_rect(self, game):
-        return self.victory_restart_button_rect if game.winner is not None else self.restart_button_rect
+        return self.restart_button_rect
 
-    # Nút Về menu chuyển vào khung chiến thắng khi ván kết thúc.
+    # Trả về vùng Về menu cố định trên bảng thông tin.
     def menu_rect(self, game):
-        return self.victory_menu_button_rect if game.winner is not None else self.menu_button_rect
+        return self.menu_button_rect
 
     # Phản hồi nhấn nút dùng chung; không tạo hoặc thực thi Command của ván.
     def button_feedback(self, rect):
@@ -212,8 +221,11 @@ class GameView:
         self.draw_text(status, self.font, self.text_color, info_x, 180)
 
         for index, player in enumerate(game.players):
-            y = 250 + index * 145
-            card = pygame.Rect(690, y - 12, 295, 118)
+            card_top = self.player_card_top + index * (
+                self.player_card_height + self.player_card_gap
+            )
+            y = card_top + 12
+            card = pygame.Rect(690, card_top, 295, self.player_card_height)
             self.theme.panel(self.screen, card, (244, 231, 207), radius=12, seed=5, shadow=False)
             if index == game.current_turn and game.winner is None:
                 pygame.draw.rect(self.screen, self.player_colors[index], card, 3, border_radius=12)
@@ -253,7 +265,7 @@ class GameView:
             return "Bạn thắng!" if game.winner is game.players[0] else "Bạn thua!"
         return f"{game.winner.name} chiến thắng!"
 
-    # Vẽ hai nút điều hướng ở cạnh phải khi đang chơi; sau thắng dùng khung riêng.
+    # Vẽ hai nút điều hướng ở đúng vị trí trên bảng thông tin trong mọi trạng thái.
     def draw_navigation_buttons(self):
         for rect, text in ((self.restart_button_rect, "Chơi lại"),
                            (self.menu_button_rect, "Về menu")):
@@ -271,30 +283,22 @@ class GameView:
     def draw_redo_button(self, enabled):
         self.draw_history_button(self.redo_button_rect, "Redo", enabled)
 
-    # Khung thắng phủ phần bàn; Undo/Redo ở cạnh phải vẫn dùng được khi đấu bot.
+    # Phủ bàn cờ và chỉ hiện thông báo kết quả, không vẽ nút hoặc quân trang trí.
     def draw_victory(self, game):
         veil = pygame.Surface((self.board_extent + 36, self.board_extent + 36), pygame.SRCALPHA)
         veil.fill((49, 34, 23, 120))
         self.screen.blit(veil, (self.board_x - 18, self.board_y - 18))
-        panel = pygame.Rect(105, 270, 516, 258)
-        self.theme.panel(self.screen, panel, (244, 225, 190), radius=20, seed=31)
-        color = self.player_colors[game.players.index(game.winner)]
         title = self.title_font.render(self.victory_message(game), True, self.text_color)
-        self.screen.blit(title, title.get_rect(center=(363, 320)))
-        if game.mode != "bot":
-            name = self.font.render(game.winner.name, True, color)
-            self.screen.blit(name, name.get_rect(center=(363, 375)))
-        self.theme.pawn(self.screen, (153, 365), color)
-        self.theme.pawn(self.screen, (573, 365), color)
-        self.theme.button(self.screen, self.victory_restart_button_rect, "Chơi lại", self.font)
-        self.theme.button(self.screen, self.victory_menu_button_rect, "Về menu", self.font)
+        center = (self.board_x + self.board_extent // 2,
+                  self.board_y + self.board_extent // 2)
+        self.screen.blit(title, title.get_rect(center=center))
 
     # Vẽ toàn bộ giao diện theo trạng thái ván chơi hiện tại.
     def draw(self, game, selected_position=None, wall_preview=None):
         if self.motion.board is not game.board:
             self.motion.reset(game.board)
         self.draw_background()
-        self.theme.panel(self.screen, pygame.Rect(680, 105, 325, 680),
+        self.theme.panel(self.screen, self.info_panel_rect,
                          (238, 219, 185), radius=18, seed=19)
 
         self.draw_board()
@@ -312,11 +316,11 @@ class GameView:
             self.draw_text("Bot đang suy nghĩ…", self.small_font, self.text_color, 700, 530)
 
         if game.mode == "bot":
-            self.draw_undo_button(game.can_undo)
-            self.draw_redo_button(game.can_redo)
-        if game.winner is None:
-            self.draw_navigation_buttons()
-        else:
+            history_enabled = game.winner is None
+            self.draw_undo_button(history_enabled and game.can_undo)
+            self.draw_redo_button(history_enabled and game.can_redo)
+        self.draw_navigation_buttons()
+        if game.winner is not None:
             self.draw_victory(game)
         self.draw_sound_button()
         pygame.display.flip()

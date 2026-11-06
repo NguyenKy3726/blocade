@@ -241,8 +241,8 @@ class UndoFlowTests(unittest.TestCase):
             choose.assert_not_called()
         self.assertEqual(self.game.command_history, [])
 
-    # Nút Undo vẫn nhận click sau người thắng hoặc sau bot thắng qua luồng chơi thật.
-    def test_button_after_either_winner(self):
+    # Sau cả hai kiểu thắng, Undo/Redo mờ và click không đổi ván; điều hướng vẫn dùng.
+    def test_history_buttons_disabled_after_either_winner(self):
         for winner in (0, 1):
             with self.subTest(winner=winner):
                 self.click(self.view.restart_rect(self.game).center)
@@ -260,9 +260,20 @@ class UndoFlowTests(unittest.TestCase):
                     self.assertTrue(self.app.update_bot())
                 self.assertIs(self.game.winner, self.game.players[winner])
                 self.app.draw()
+                with patch.object(self.view, "draw_undo_button") as draw_undo, \
+                        patch.object(self.view, "draw_redo_button") as draw_redo:
+                    self.app.draw()
+                    draw_undo.assert_called_once_with(False)
+                    draw_redo.assert_called_once_with(False)
+                self.assertNotIn(self.view.undo_button_rect, self.app.feedback_rects())
+                self.assertNotIn(self.view.redo_button_rect, self.app.feedback_rects())
+                finished = self.game.capture_state()
                 self.click(self.view.undo_button_rect.center)
-                self.assertEqual(self.game.capture_state(), before)
+                self.click(self.view.redo_button_rect.center)
+                self.assertEqual(self.game.capture_state(), finished)
                 self.assertFalse(self.app.update_bot())
+                self.click(self.view.restart_rect(self.game).center)
+                self.assertIsNone(self.game.winner)
 
     # Reset/về menu xóa lịch sử; chế độ hai người không vẽ hoặc nhận Undo.
     def test_history_cleared_on_restart_and_menu(self):

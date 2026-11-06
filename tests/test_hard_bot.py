@@ -307,8 +307,8 @@ class HardFlowTests(unittest.TestCase):
         self.assertEqual(self.game.current_turn, 1)
         self.assertFalse(self.app.update_bot())
 
-    # GameOver State dừng hành động; Undo/Redo đưa về đúng State mà không tìm lại bot.
-    def test_game_over_state_undo_redo(self):
+    # GameOver dừng hành động và khóa Undo/Redo; nút Chơi lại vẫn dùng được.
+    def test_game_over_disables_history_controls(self):
         self.game.players[0].row = 7
         self.game.players[1].col = 0
         self.click(self.view.model_to_screen_point((self.view.board_x + 4 * 66 + 29, self.view.board_y + 8 * 66 + 29)))
@@ -316,10 +316,21 @@ class HardFlowTests(unittest.TestCase):
         self.assertFalse(self.app.update())
         self.assertFalse(self.app.update_bot())
         self.app.draw()
+        with patch.object(self.view, "draw_undo_button") as draw_undo, \
+                patch.object(self.view, "draw_redo_button") as draw_redo:
+            self.app.draw()
+            draw_undo.assert_called_once_with(False)
+            draw_redo.assert_called_once_with(False)
+        self.assertNotIn(self.view.undo_button_rect, self.app.feedback_rects())
+        self.assertNotIn(self.view.redo_button_rect, self.app.feedback_rects())
+        finished = self.game.capture_state()
         self.click(self.view.undo_button_rect.center)
-        self.assertIsInstance(self.app.state, HumanTurnState)
         self.click(self.view.redo_button_rect.center)
         self.assertIsInstance(self.app.state, GameOverState)
+        self.assertEqual(self.game.capture_state(), finished)
+        self.click(self.view.restart_rect(self.game).center)
+        self.assertIsNone(self.game.winner)
+        self.assertIsInstance(self.app.state, HumanTurnState)
 
     # Bot đặt tường qua Command, Undo/Redo giữ đúng màu/tường và không gọi lại tìm kiếm.
     def test_wall_round_undo_redo(self):

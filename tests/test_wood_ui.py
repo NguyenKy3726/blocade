@@ -115,28 +115,52 @@ class WoodUITests(unittest.TestCase):
             self.view.draw(self.game)
             self.assertEqual([call.args[0] for call in play.call_args_list], ["move", "move"])
 
-    # Thắng chỉ phát âm một lần; popup điều hướng đúng và Undo/Redo vẫn dùng được.
-    def test_victory_popup_navigation_and_command_history(self):
+    # Lớp phủ chỉ hiện kết quả; các nút thường giữ vị trí và lịch sử bị khóa.
+    def test_victory_overlay_and_sidebar_controls(self):
         start_game(self.app, self.menu)
         self.game.players[0].row = 7
         self.game.players[1].col = 0
+        restart_rect = self.view.restart_rect(self.game).copy()
+        menu_rect = self.view.menu_rect(self.game).copy()
         with patch.object(self.view.audio, "play", wraps=self.view.audio.play) as play:
             self.controller.execute_command(MoveCommand(self.game, (8, 4)))
             self.app.draw()
             self.app.draw()
             self.assertEqual([call.args[0] for call in play.call_args_list], ["move", "win"])
         self.assertIsInstance(self.app.state, GameOverState)
-        self.click(self.view.restart_button_rect)
-        self.assertIsNotNone(self.game.winner)
+        board_frame = pygame.Rect(self.view.board_x - 18, self.view.board_y - 18,
+                                  self.view.board_extent + 36, self.view.board_extent + 36)
+        self.assertEqual(self.view.info_panel_rect.top, board_frame.top)
+        self.assertEqual(self.view.info_panel_rect.bottom, board_frame.bottom)
+        first_bottom = self.view.player_card_top + self.view.player_card_height
+        second_top = self.view.player_card_top + self.view.player_card_height + self.view.player_card_gap
+        second_bottom = second_top + self.view.player_card_height
+        self.assertEqual(second_top - first_bottom, self.view.player_card_gap)
+        self.assertEqual(self.view.undo_button_rect.top - second_bottom,
+                         self.view.player_card_gap)
+        self.assertEqual(self.view.restart_rect(self.game), restart_rect)
+        self.assertEqual(self.view.menu_rect(self.game), menu_rect)
+        with patch.object(self.view.theme, "button") as draw_button, \
+                patch.object(self.view.theme, "pawn") as draw_pawn:
+            self.view.draw_victory(self.game)
+            draw_button.assert_not_called()
+            draw_pawn.assert_not_called()
+        with patch.object(self.view, "draw_undo_button") as draw_undo, \
+                patch.object(self.view, "draw_redo_button") as draw_redo:
+            self.view.draw(self.game)
+            draw_undo.assert_called_once_with(False)
+            draw_redo.assert_called_once_with(False)
+        self.assertNotIn(self.view.undo_button_rect, self.app.feedback_rects())
+        self.assertNotIn(self.view.redo_button_rect, self.app.feedback_rects())
+        finished = self.game.capture_state()
         self.click(self.view.undo_button_rect)
-        self.assertIsInstance(self.app.state, HumanTurnState)
         self.click(self.view.redo_button_rect)
-        self.assertIsInstance(self.app.state, GameOverState)
-        self.click(self.view.victory_restart_button_rect)
+        self.assertEqual(self.game.capture_state(), finished)
+        self.click(self.view.restart_rect(self.game))
         self.assertIsNone(self.game.winner)
         self.assertEqual(self.game.command_history, [])
         self.game.winner = self.game.players[1]
-        self.click(self.view.victory_menu_button_rect)
+        self.click(self.view.menu_rect(self.game))
         self.assertIs(type(self.app.state), MenuState)
 
     # Kết quả đấu bot được nói theo góc nhìn người chơi, không gọi bot là người thắng.

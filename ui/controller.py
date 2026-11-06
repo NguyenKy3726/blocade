@@ -37,6 +37,7 @@ class GameController:
     def is_undo_event(self, event):
         return (
             self.game.mode == "bot"
+            and self.game.winner is None
             and event.type == pygame.MOUSEBUTTONDOWN
             and event.button == 1
             and self.view.undo_button_rect.collidepoint(event.pos)
@@ -46,6 +47,7 @@ class GameController:
     def is_redo_event(self, event):
         return (
             self.game.mode == "bot"
+            and self.game.winner is None
             and event.type == pygame.MOUSEBUTTONDOWN
             and event.button == 1
             and self.view.redo_button_rect.collidepoint(event.pos)
