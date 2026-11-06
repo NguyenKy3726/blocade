@@ -17,10 +17,14 @@ Mã nguồn pattern được đặt trong thư mục này và tách mỗi lớp 
 
 ## Strategy
 
-- `strategy/bot_strategy.py`: giao diện chung cho các chiến lược bot.
-- `strategy/easy_strategy.py`, `strategy/medium_strategy.py`, `strategy/hard_strategy.py`: cách chọn nước theo từng cấp.
-- `strategy/bot_strategy_factory.py`: tạo Strategy theo cấp người chơi chọn.
-- `strategy/search_context.py` và `strategy/search_limit.py`: mỗi lớp hỗ trợ tìm kiếm của bot khó nằm trong file riêng.
+- **Context:** `ui/controller.py` — lớp `GameController` giữ tham chiếu `bot_strategy`, được tạo bằng `BotStrategyFactory`, rồi giao việc chọn hành động cho Strategy hiện tại.
+- **Strategy interface:** `strategy/bot_strategy.py` — lớp trừu tượng `BotStrategy` định nghĩa thao tác chung `choose_command(game)`.
+- **Concrete Strategies:** `strategy/easy_strategy.py`, `strategy/medium_strategy.py`, `strategy/hard_strategy.py` — mỗi lớp kế thừa `BotStrategy` và triển khai `choose_command(game)` bằng một cách chọn nước khác nhau.
+- **Factory bổ sung:** `strategy/bot_strategy_factory.py` tạo đúng chiến lược theo cấp người chơi chọn. Factory không thay vai trò Context hoặc Strategy interface.
+- `HardStrategy` có thêm `start_search(game)` để chia tìm kiếm Minimax qua nhiều khung hình. Đây là phần mở rộng kỹ thuật cho bot khó; `choose_command(game)` vẫn là thao tác chung mà mọi Strategy cung cấp.
+- `strategy/search_context.py` và `strategy/search_limit.py`: các lớp hỗ trợ tìm kiếm của bot khó, mỗi lớp ở file riêng.
+
+Ánh xạ theo sơ đồ bài giảng: `GameController` → Context; `BotStrategy` → Strategy; `EasyStrategy`/`MediumStrategy`/`HardStrategy` → ConcreteStrategyA/B/C; `choose_command()` → AlgorithmInterface.
 
 ## Đừng nhầm thuật toán với pattern
 
