@@ -43,7 +43,7 @@ class GameView:
             680, self.board_y - 18, 325, self.board_extent + 36
         )
         # Có thể chỉnh kích thước khung và vị trí chữ/hình kết quả tại đây.
-        self.victory_panel_rect = pygame.Rect(133, 270, 460, 258)
+        self.victory_panel_rect = pygame.Rect(100, 312, 520, 110)
         self.victory_message_center = (363, 365)
         self.victory_pawn_positions = ((153, 365), (573, 365))
         self.player_card_top = 238
