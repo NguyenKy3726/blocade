@@ -3,18 +3,22 @@ from time import monotonic
 from game.board import Board
 from game.player import Player
 from game.pathfinder import PathFinder
+from pattern.command.invoker import CommandInvoker
 
 
 # Quản lý bàn cờ, người chơi, lượt chơi và kết quả ván.
 class Game:
     # Khởi tạo ván 9×9, mặc định hai người; chế độ bot được chọn từ menu.
-    def __init__(self, time_source=monotonic, mode="two_players", bot_level="easy", human_first=True):
+    def __init__(self, time_source=monotonic, mode="two_players", bot_level="easy", human_first=True,
+                 history_enabled=None):
         # Tách đồng hồ khỏi Pygame để kiểm tra mà không cần chờ thật.
         self.time_source = time_source
         self.turn_duration = 30.0
         self.mode = mode
         self.bot_level = bot_level
         self.human_first = human_first
+        self.history_enabled_override = history_enabled
+        self.command_invoker = CommandInvoker(self)
         self.reset()
 
     # Bắt đầu lại ván, giữ chế độ, cấp bot và thứ tự cũ nếu không chọn khác.
@@ -31,6 +35,9 @@ class Game:
         self.mode = new_mode
         self.bot_level = new_level
         self.human_first = new_first
+        enabled = self.mode == "bot" if self.history_enabled_override is None else self.history_enabled_override
+        self.command_invoker.set_history_enabled(enabled)
+        self.command_invoker.clear()
         self.board = Board(size=9)
         self.players = [
             Player("Bạn" if self.mode == "bot" else f"Người chơi {self.player_number(0)}", 0, 4, 8),
@@ -43,8 +50,16 @@ class Game:
         self.turn_started_at = self.time_source() if self.timer_enabled else None
         self.wall_owners = {}
         self.notice = ""
-        self.command_history = []
-        self.redo_history = []
+
+    # Cung cấp các lệnh đã thực hiện mà Invoker đang quản lý.
+    @property
+    def command_history(self):
+        return self.command_invoker.commands
+
+    # Cung cấp các lệnh đã hoàn tác để giữ khả năng kiểm tra trạng thái ván.
+    @property
+    def redo_history(self):
+        return self.command_invoker.redo_commands
 
     # Số 1 luôn là bên đi trước; chỉ số nội bộ 0 vẫn là người/xanh lá ở dưới.
     def player_number(self, index):
@@ -86,36 +101,20 @@ class Game:
     # Chỉ đấu bot mới Undo; phải có hành động của người để trở về lúc người chọn nước.
     @property
     def can_undo(self):
-        return self.mode == "bot" and any(c.player_index == 0 for c in self.command_history)
+        return self.command_invoker.can_undo
 
     # Hoàn tác từ lệnh mới nhất về tới hành động gần nhất của người chơi.
     def undo_round(self):
-        if not self.can_undo:
-            return False
-        while self.command_history:
-            command = self.command_history[-1]
-            if not command.undo():
-                return False
-            if command.player_index == 0:
-                return True
-        return False
+        return self.command_invoker.undo_round()
 
     # Chỉ đấu bot có Redo, khi có Command đã Undo của ván hiện tại.
     @property
     def can_redo(self):
-        return self.mode == "bot" and bool(self.redo_history)
+        return self.command_invoker.can_redo
 
     # Làm lại lệnh người rồi lệnh bot đã có, dừng trước lượt người kế tiếp.
     def redo_round(self):
-        if not self.can_redo:
-            return False
-        while self.redo_history:
-            command = self.redo_history[-1]
-            if not command.redo():
-                return False
-            if not self.redo_history or self.redo_history[-1].player_index == 0:
-                return True
-        return False
+        return self.command_invoker.redo_round()
 
     # Chỉ chế độ hai người mới dùng đồng hồ và mất lượt do hết giờ.
     @property

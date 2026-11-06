@@ -1,6 +1,6 @@
 import unittest
 
-from pattern.command import Command, CommandInvoker, MoveCommand, PlaceWallCommand
+from pattern.command import Command, MoveCommand, PlaceWallCommand
 from game.game import Game
 
 
@@ -14,13 +14,30 @@ class CommandTests(unittest.TestCase):
     # Kiểm tra các vai trò Command và việc Invoker gọi ConcreteCommand.
     def test_command_roles_match_pattern(self):
         self.assertTrue(hasattr(Command, "execute"))
-        invoker = CommandInvoker()
-        self.assertFalse(invoker.execute())
+        invoker = self.game.command_invoker
+        self.assertIs(invoker.receiver, self.game)
         command = MoveCommand(self.game, (1, 4))
         self.assertIs(command.receiver, self.game)
         self.assertTrue(invoker.execute(command))
         self.assertIs(invoker.command, command)
         self.assertEqual(self.game.players[0].position, (1, 4))
+        self.assertEqual(self.game.command_history, [])
+
+    # Chính sách lịch sử thuộc phiên/Invoker, không bị Command quyết định theo mode.
+    def test_invoker_configures_history_for_real_and_simulated_games(self):
+        bot_game = Game(mode="bot")
+        bot_command = MoveCommand(bot_game, (1, 4))
+        self.assertTrue(bot_game.command_invoker.execute(bot_command))
+        self.assertEqual(bot_game.command_history, [bot_command])
+        self.assertTrue(bot_game.can_undo)
+
+        simulation = Game(mode="bot", history_enabled=False)
+        simulated_command = MoveCommand(simulation, (1, 4))
+        self.assertTrue(simulation.command_invoker.execute(simulated_command))
+        self.assertEqual(simulation.command_history, [])
+        self.assertEqual(simulation.redo_history, [])
+        self.assertFalse(simulation.can_undo)
+        self.assertFalse(simulated_command.undo())
 
     # Chụp trạng thái có thể bị ảnh hưởng khi thực hiện một lệnh.
     def snapshot(self):

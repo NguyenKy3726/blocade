@@ -16,7 +16,7 @@ from pattern.strategy import BotStrategyFactory
 from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
 from game.pathfinder import PathFinder
-from tests.support import start_game, settle_effects, assert_wood_color
+from tests.support import start_game, settle_effects, assert_wood_color, execute_command
 from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -57,7 +57,7 @@ class MediumBotTests(unittest.TestCase):
     # Đầu ván không phí tường nếu đi quân có lợi hơn; lựa chọn không đổi trạng thái/lịch sử.
     def test_opening_moves_without_wasting_wall_or_mutation(self):
         self.assertIsNone(self.strategy.choose_command(self.game))
-        self.assertTrue(MoveCommand(self.game, (1, 4)).execute())
+        self.assertTrue(execute_command(MoveCommand(self.game, (1, 4))))
         before = self.game.capture_state()
         history = self.game.command_history.copy()
         with patch.object(PlaceWallCommand, "execute", side_effect=AssertionError("Không được thử execute")):
@@ -67,7 +67,7 @@ class MediumBotTests(unittest.TestCase):
         self.assertEqual(self.game.capture_state(), before)
         self.assertEqual(self.game.command_history, history)
         self.assertEqual(self.game.redo_history, [])
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertEqual(self.game.current_turn, 0)
         self.assertEqual(self.game.players[1].walls_remaining, 10)
 
@@ -79,7 +79,7 @@ class MediumBotTests(unittest.TestCase):
         command = self.strategy.choose_command(self.game)
         self.assertIsInstance(command, MoveCommand)
         self.assertEqual(command.destination, (0, 4))
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertIs(self.game.winner, self.game.players[1])
         self.assertIsNone(self.strategy.choose_command(self.game))
 
@@ -92,7 +92,7 @@ class MediumBotTests(unittest.TestCase):
         command = self.strategy.choose_command(self.game)
         self.assertIsInstance(command, PlaceWallCommand)
         self.assertEqual(self.game.capture_state(), before)
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertEqual(self.game.players[1].walls_remaining, 9)
         self.assertEqual(self.game.wall_owners,
                          {(command.orientation, command.row, command.col): 1})
@@ -108,7 +108,7 @@ class MediumBotTests(unittest.TestCase):
         command = self.strategy.choose_command(self.game)
         self.assertIsInstance(command, MoveCommand)
         self.assertIn(command.destination, self.game.get_legal_moves())
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertEqual(self.game.players[1].walls_remaining, 0)
 
     # Đánh giá một tường khóa đường phải loại bỏ, dù chặn được đối thủ.
@@ -141,7 +141,7 @@ class MediumBotTests(unittest.TestCase):
                     self.assertIn(command.destination, {(1, 3), (1, 5)})
                 else:
                     self.assertEqual(command.destination, (0, 4))
-                    self.assertTrue(command.execute())
+                    self.assertTrue(execute_command(command))
                     self.assertIs(self.game.winner, self.game.players[1])
 
     # Luôn trả lại tường/vị trí thử nếu việc đánh giá gặp ngoại lệ.
@@ -161,10 +161,10 @@ class MediumBotTests(unittest.TestCase):
 
     # Đánh giá cả bàn sau Undo không được làm mất nhánh Redo cũ.
     def test_thinking_does_not_clear_redo(self):
-        self.assertTrue(MoveCommand(self.game, (1, 4)).execute())
-        self.assertTrue(MoveCommand(self.game, (7, 4)).execute())
-        self.assertTrue(MoveCommand(self.game, (2, 4)).execute())
-        self.assertTrue(MoveCommand(self.game, (6, 4)).execute())
+        self.assertTrue(execute_command(MoveCommand(self.game, (1, 4))))
+        self.assertTrue(execute_command(MoveCommand(self.game, (7, 4))))
+        self.assertTrue(execute_command(MoveCommand(self.game, (2, 4))))
+        self.assertTrue(execute_command(MoveCommand(self.game, (6, 4))))
         self.assertTrue(self.game.command_history[-1].undo())
         before = self.game.capture_state()
         redo = self.game.redo_history.copy()
@@ -248,7 +248,7 @@ class MediumFlowTests(unittest.TestCase):
         for _ in range(12):
             if self.game.winner is not None:
                 break
-            self.assertTrue(MoveCommand(self.game, self.game.get_legal_moves()[0]).execute())
+            self.assertTrue(execute_command(MoveCommand(self.game, self.game.get_legal_moves()[0])))
             if self.game.winner is not None:
                 break
             start = perf_counter()

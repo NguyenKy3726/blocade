@@ -11,14 +11,16 @@ Mã nguồn pattern được đặt trong thư mục này và tách mỗi lớp 
 
 ## Command
 
-- `command/command.py`: interface `Command`, tương ứng với `ICommand`; khai báo `execute()` và dùng chung phần quản lý lịch sử Undo/Redo.
+- `command/command.py`: interface `Command`, tương ứng với `ICommand`; khai báo `execute()` và ủy quyền `undo()`/`redo()` cho Invoker nếu lệnh được ghi vào lịch sử.
 - `command/move_command.py` và `command/place_wall_command.py`: ConcreteCommand; mỗi lớp có `execute()` riêng và giữ dữ liệu cần cho hành động.
-- `command/invoker.py`: `CommandInvoker` giữ lệnh hiện tại và gọi `execute()`; đây là Invoker tách riêng.
+- `command/invoker.py`: `CommandInvoker` gọi `execute()`, đồng thời sở hữu các ngăn Undo/Redo và chính sách bật/tắt lịch sử.
 - `ui/controller.py` (`GameController`): Client; hiểu thao tác chuột, tạo ConcreteCommand rồi giao cho Invoker.
 - `game/game.py` (`Game`): Receiver; kiểm tra luật, BFS, giờ và cập nhật lượt/kết quả khi ConcreteCommand gọi hành động tương ứng.
 - Các chiến lược bot có thể tạo Command để mô phỏng tìm kiếm; hành động bot được chọn cuối cùng cũng đi qua `GameController` và `CommandInvoker`.
 
-Ánh xạ theo sơ đồ bài giảng: `GameController` → Client; `CommandInvoker` → Invoker; `Command` → ICommand; `MoveCommand`/`PlaceWallCommand` → ConcreteCommand; `Game` → Receiver. Command giữ tham chiếu Receiver và lệnh cụ thể gọi `receiver` khi `execute()` chạy.
+Ánh xạ theo sơ đồ bài giảng: `GameController` → Client; `CommandInvoker` → Invoker; `Command` → ICommand; `MoveCommand`/`PlaceWallCommand` → ConcreteCommand; `Game` → Receiver. Command giữ tham chiếu Receiver và lệnh cụ thể gọi `receiver` khi `execute()` chạy. Command không kiểm tra chế độ chơi và không tự quyết định lưu lịch sử.
+
+- Ván bot thật bật lịch sử để người chơi Undo/Redo; ván hai người tắt lịch sử. Bản Game mô phỏng của bot khó cũng tắt lịch sử. Các nhánh Minimax chụp và khôi phục snapshot trực tiếp quanh từng nước giả định, nên không ghi lịch sử chơi hoặc Redo.
 
 ## Strategy
 

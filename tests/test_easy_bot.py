@@ -14,7 +14,7 @@ from pattern.strategy import EasyStrategy
 from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
 from game.pathfinder import PathFinder
-from tests.support import start_game, menu_frames
+from tests.support import start_game, menu_frames, execute_command
 from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -48,9 +48,9 @@ class EasyBotTests(unittest.TestCase):
         self.assertFalse(game.timer_enabled)
         self.assertIsNone(game.turn_started_at)
         self.assertFalse(game.update_time())
-        self.assertTrue(MoveCommand(game, (1, 4)).execute())
-        self.assertTrue(self.strategy.choose_command(game).execute())
-        self.assertTrue(PlaceWallCommand(game, "horizontal", 3, 3).execute())
+        self.assertTrue(execute_command(MoveCommand(game, (1, 4))))
+        self.assertTrue(execute_command(self.strategy.choose_command(game)))
+        self.assertTrue(execute_command(PlaceWallCommand(game, "horizontal", 3, 3)))
         game.reset()
         self.assertEqual(game.mode, "bot")
         clock.assert_not_called()
@@ -58,14 +58,14 @@ class EasyBotTests(unittest.TestCase):
     # Tạo quyết định không đổi ván; bot chỉ đi một lần rồi trả lượt cho người.
     def test_strategy_returns_legal_command_without_mutating(self):
         self.assertIsNone(self.strategy.choose_command(self.game))
-        self.assertTrue(MoveCommand(self.game, (1, 4)).execute())
+        self.assertTrue(execute_command(MoveCommand(self.game, (1, 4))))
         positions = [p.position for p in self.game.players]
         command = self.strategy.choose_command(self.game)
         self.assertIsInstance(command, MoveCommand)
         self.assertEqual(command.destination, (7, 4))
         self.assertIn(command.destination, self.game.get_legal_moves())
         self.assertEqual([p.position for p in self.game.players], positions)
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertEqual(self.game.current_turn, 0)
         self.assertIsNone(self.strategy.choose_command(self.game))
 
@@ -76,7 +76,7 @@ class EasyBotTests(unittest.TestCase):
         self.assertTrue(self.game.board.place_wall("horizontal", 3, 3))
         command = self.strategy.choose_command(self.game)
         self.assertEqual(command.destination, (4, 5))
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
 
     # Bot dùng chung nhảy thẳng/chéo; không tự chép luật vào chiến lược.
     def test_bot_straight_and_diagonal_jump(self):
@@ -91,14 +91,14 @@ class EasyBotTests(unittest.TestCase):
                 command = self.strategy.choose_command(self.game)
                 expected = {(3, 3), (3, 5)} if blocked else {(2, 4)}
                 self.assertIn(command.destination, expected)
-                self.assertTrue(command.execute())
+                self.assertTrue(execute_command(command))
 
     # Chơi cả ván tới bot thắng, sau đó không cho bot đáp trả thêm.
     def test_bot_completes_game_and_stops_on_win(self):
         for step in range(8):
-            self.assertTrue(MoveCommand(self.game, (0, 5 if step % 2 == 0 else 6)).execute())
+            self.assertTrue(execute_command(MoveCommand(self.game, (0, 5 if step % 2 == 0 else 6))))
             command = self.strategy.choose_command(self.game)
-            self.assertTrue(command.execute())
+            self.assertTrue(execute_command(command))
         self.assertIs(self.game.winner, self.game.players[1])
         self.assertEqual(self.game.players[1].position, (0, 4))
         self.assertIsNone(self.strategy.choose_command(self.game))
@@ -107,7 +107,7 @@ class EasyBotTests(unittest.TestCase):
     def test_human_win_stops_bot(self):
         self.game.players[0].row = 7
         self.game.players[1].col = 0
-        self.assertTrue(MoveCommand(self.game, (8, 4)).execute())
+        self.assertTrue(execute_command(MoveCommand(self.game, (8, 4))))
         self.assertIs(self.game.winner, self.game.players[0])
         self.assertIsNone(self.strategy.choose_command(self.game))
 

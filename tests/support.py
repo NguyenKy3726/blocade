@@ -1,6 +1,11 @@
 import pygame
 
 
+# Thực thi lệnh của một ván thật qua Invoker để lịch sử tuân theo chính sách của ván.
+def execute_command(command):
+    return command.receiver.command_invoker.execute(command)
+
+
 # Các khung hình chọn chế độ/cấp/lượt qua menu thật; mỗi trang nhận một click.
 def menu_frames(menu, mode="bot", level="easy", human_first=True):
     rects = [menu.start_button_rect if mode == "two_players" else menu.versus_bot_button_rect]

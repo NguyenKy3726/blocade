@@ -219,7 +219,7 @@ Ghi chú: thứ tự ở mục 12 này cập nhật và ưu tiên hơn thứ t�
 - Ánh xạ theo sơ đồ bài giảng: `GameController` là Client, `CommandInvoker` là Invoker, `Command` là interface `ICommand`, `MoveCommand`/`PlaceWallCommand` là ConcreteCommand và `Game` là Receiver.
 - Controller nhận click, đổi tọa độ chuột thành ô đích hoặc tường, tạo ConcreteCommand rồi giao cho Invoker gọi `execute()`. Lệnh không được lưu hàng đợi hoặc tự chạy lại.
 - Tạo Command chỉ lưu yêu cầu và Receiver; `execute()` mới gọi Game và trả về True/False. Game vẫn là nơi kiểm tra nước đi, tường, BFS, số tường, thời gian và cập nhật lượt/kết quả. Không chép luật sang Command hoặc controller.
-- Xem trước không thực thi Command. Lịch sử chỉ lưu Command thành công khi đấu bot; Command.undo()/redo() khôi phục trạng thái trước/sau đã lưu. Chơi lại và hết giờ vẫn do luồng hiện tại xử lý.
+- Xem trước không thực thi Command. `Command` chỉ thực hiện hành động qua Receiver, không kiểm tra chế độ chơi hay tự ghi lịch sử. `CommandInvoker` chụp snapshot và ghi lệnh thành công khi phiên bật lịch sử; phiên bot thật bật để dùng Undo/Redo, phiên hai người tắt. Chơi lại và hết giờ vẫn do luồng hiện tại xử lý.
 
 12.6. Quy tắc đấu bot/Undo đã chốt và lộ trình tiếp theo
 
@@ -253,8 +253,8 @@ Mục này ưu tiên hơn thứ tự cũ khi có khác nhau:
 - Khi đấu bot, nút Undo nằm trên Chơi lại. Nút bị mờ khi chưa có hành động của người để lùi. Chế độ hai người không hiện nút hoặc cho Undo.
 - Bot đã đáp trả: Undo gọi undo() của lệnh bot, rồi của lệnh người gần nhất, trả về lúc người chọn nước trước đó. Bot chưa đi (kể cả người vừa thắng): chỉ lùi lệnh người. Sau Undo, bot không được đáp trả cho tới khi người chọn một hành động hợp lệ mới.
 - Có thể Undo liên tiếp từng cặp lượt; dùng được sau người hoặc bot thắng. Nước không hợp lệ và hình xem trước không vào lịch sử.
-- Command.execute() dùng chung trong lớp cha: chụp trạng thái trước hành động, gọi _perform() của lệnh cụ thể, lưu cả trạng thái sau hành động và chỉ ghi lịch sử nếu thành công. MoveCommand và PlaceWallCommand kế thừa execute(), undo() và redo(), Game vẫn giữ toàn bộ luật.
-- Command.undo() chỉ chấp nhận lệnh trên cùng lịch sử và đúng ván. Nó khôi phục bản sao trạng thái qua Game.restore_state(), rồi bỏ lệnh khỏi lịch sử. Game.undo_round() chỉ điều phối thứ tự gọi undo() về tới lệnh của người, không tự suy ngược luật di chuyển/đặt tường.
+- `Command.execute()` gọi hành động của ConcreteCommand; không chụp snapshot và không biết lịch sử hay mode. `CommandInvoker.execute()` chụp trạng thái trước/sau khi lịch sử được bật, gọi Command và chỉ lưu lệnh thành công. `MoveCommand` và `PlaceWallCommand` giữ riêng dữ liệu hành động; `Game` vẫn giữ toàn bộ luật.
+- `Command.undo()`/`redo()` ủy quyền cho Invoker gắn với lệnh. `CommandInvoker` sở hữu ngăn Undo/Redo và khôi phục snapshot qua `Game.restore_state()`. `Game.undo_round()` chỉ điều phối thứ tự hoàn tác tới lệnh của người, không tự suy ngược luật di chuyển/đặt tường.
 - Trạng thái gồm vị trí và số tường hai phe, danh sách tường/cạnh bị chặn, chủ sở hữu, lượt, người thắng, dữ liệu đồng hồ và thông báo. Đấu bot vẫn không chạy đồng hồ. Chỉ chụp dữ liệu của ván, không sao chép cửa sổ Pygame hoặc lịch sử vào snapshot.
 - Chơi lại, Về menu hoặc bắt đầu ván mới xóa lịch sử; lệnh giữ tham chiếu Board để không execute/undo xuyên sang ván mới. Mỗi Command thành công chỉ execute một lần; làm lại phải gọi redo() theo mục 12.9.
 - Test riêng: `python -m unittest discover -s tests -p test_undo.py -v`. Trên Windows cần thử đi quân/đặt tường → bot đáp trả → Undo, Undo nhiều lần, Undo sau thắng và Chơi lại/Về menu xóa lịch sử.
@@ -262,12 +262,12 @@ Mục này ưu tiên hơn thứ tự cũ khi có khác nhau:
 12.9. Redo bằng Command pattern
 
 - Chế độ đấu bot có Redo cạnh Undo; nút bị mờ nếu chưa có lệnh đã Undo. Hai người không có Undo/Redo, vẫn giữ đồng hồ như cũ.
-- Command lưu before_state và after_state. undo() khôi phục before_state và chuyển chính Command đó từ command_history sang redo_history. redo() khôi phục after_state, chuyển lệnh về command_history, không gọi _perform() hoặc chọn lại nước bot.
+- `CommandInvoker` lưu before_state và after_state. Undo khôi phục before_state và chuyển Command từ ngăn Undo sang ngăn Redo. Redo khôi phục after_state, không thực thi lại hành động hoặc yêu cầu bot chọn nước mới.
 - Game.redo_round() gọi redo() theo thứ tự người rồi bot đã có, dừng trước lệnh người của vòng tiếp theo. Nếu trước Undo bot chưa đáp trả, chỉ khôi phục lệnh người; bot sau đó đi lần đầu theo luồng bình thường.
 - Có thể Undo/Redo liên tiếp nhiều vòng; khôi phục đúng quân, tường, cạnh bị chặn, màu, số tường, lượt và kết quả thắng. Redo cặp đầy đủ không khiến bot đánh thêm một nước.
-- Chọn hành động mới thành công sau Undo xóa toàn bộ redo_history. Nước sai, tường bị BFS từ chối và hình xem trước không xóa nhánh Redo.
+- Hành động mới thành công qua Invoker sau Undo xóa toàn bộ ngăn Redo. Nước sai, tường bị BFS từ chối và hình xem trước không xóa nhánh Redo.
 - Chơi lại, Về menu và bắt đầu ván mới xóa cả hai lịch sử. Command.redo() chỉ chấp nhận đúng lệnh trên cùng ngăn Redo, cùng Board và trạng thái hiện tại đúng before_state, tránh khôi phục trên ván/nhánh khác.
-- Mỗi execute() thành công dùng một lần; undo()/redo() có thể lặp lại. Các snapshot chỉ lưu dữ liệu ván, không lưu đệ quy các lịch sử.
+- Mỗi Command chỉ thực thi thành công một lần; Undo/Redo có thể lặp lại qua Invoker. Các snapshot chỉ lưu dữ liệu ván, không lưu đệ quy các lịch sử.
 - Trong main, click Undo/Redo bỏ các sự kiện dư của khung hình để tránh thực hiện ngay một nước khác sau khi lùi/làm lại.
 - Test riêng: `python -m unittest discover -s tests -p test_redo.py -v`. Trên Windows thử đi/đặt tường → bot đáp trả → Undo → Redo, nhiều vòng liên tiếp, đổi nước sau Undo, Redo sau thắng và Chơi lại/Về menu xóa cả hai lịch sử.
 - Bot trung bình đã sử dụng cùng Command/Undo/Redo và không đồng hồ; xem mục 12.10.
@@ -280,7 +280,7 @@ Mục này ưu tiên hơn thứ tự cũ khi có khác nhau:
 - PathFinder.distances_to_goal chạy BFS ngược từ cả hàng đích để tính bản đồ đường còn lại. Đánh giá số lượt dùng nước đầu hợp lệ từ Game, vì vậy có tính nhảy thẳng/chéo ở bước đầu; phần đường sau đó là ước lượng qua tường, không mô phỏng toàn bộ quân/lượt tương lai.
 - Xếp hạng: ưu tiên phương án không cho người thắng ngay ở lượt tới; sau đó tối đa hóa khoảng cách người trừ khoảng cách bot. Đặt tường bị trừ 0.5 điểm để tránh phí tường khi lợi ích ngang nhau. Các phương án ngang điểm được chọn ngẫu nhiên.
 - Tường thử phải hợp lệ về hình học và cả hai phe vẫn nằm trong bản đồ BFS tới đích. Tường khóa đường bị loại, không làm mất tường thật.
-- Việc thử dùng try/finally để luôn trả vị trí quân/tường về trạng thái trước đánh giá. Không gọi Command.execute() khi thử, không đổi lượt, đồng hồ, màu sở hữu hoặc hai lịch sử. Chỉ Command được chọn cuối cùng mới execute và ghi lịch sử.
+- Các lựa chọn được đánh giá tạm bằng cách chụp và khôi phục trạng thái trong `try/finally`; không ghi lịch sử hoặc Redo. Chỉ Command được chọn cuối cùng mới được thực thi qua Invoker của ván thật và được ghi lịch sử.
 - Chơi lại giữ cấp đã chọn; về menu có thể chọn lại dễ/trung bình/hai người. Undo/Redo lùi/làm lại cả tường do bot đặt và nước người. Redo không gọi lại Strategy, nên giữ đúng tường/nước bot cũ.
 - Cấp này đánh giá một hành động và mối đe dọa thắng ngay, chưa dùng Minimax/Alpha–Beta; không bảo đảm luôn chọn nước tối ưu hoặc chặn được mọi đe dọa.
 - Test riêng: `python -m unittest discover -s tests -p test_medium_bot.py -v`. Trên Windows thử chọn Trung bình, tiến gần hàng đích để xem bot chặn, đặt tường cản bot, Undo/Redo tường xanh, Chơi lại giữ cấp và chuyển về Hai người kiểm tra đồng hồ.
@@ -292,14 +292,14 @@ Mục này ưu tiên hơn thứ tự cũ khi có khác nhau:
 - HardStrategy dùng Minimax: bot tối đa hóa điểm, người tối thiểu hóa điểm. Alpha–Beta bỏ nhánh không thể cải thiện kết quả hiện tại. Tìm sâu dần: hoàn tất đánh giá một hành động trước, rồi hai, tối đa ba (bot → người → bot).
 - Mỗi gốc xét mọi vị trí tường; tầng sâu lấy tường trên các cạnh của đường ngắn hai phe (tối đa 6 cạnh đầu mỗi đường). Sau xếp hạng chỉ giữ tối đa 4 tường tốt và mọi nước đi hợp lệ ở mỗi nút. Đây là Minimax/Alpha–Beta trên cây rút gọn, không vét cạn toàn bộ tường hoặc bảo đảm tối ưu tuyệt đối.
 - Điểm thắng/thua lớn hơn mọi điểm đường đi; ưu tiên thắng sớm và trì hoãn thua. Điểm thường dùng chênh lệch khoảng cách BFS có tính nhảy ở nước đầu, số tường và đe dọa thắng ngay.
-- Mô phỏng dùng Game riêng, thực thi/undo Command trên bản sao; không thay đổi bàn, màu, thời gian hay lịch sử thật. Khi chọn xong chỉ tạo một Command gắn với ván thật để controller execute.
+- Mô phỏng dùng Game riêng với lịch sử Invoker tắt. Minimax thực thi Command trên bản sao rồi khôi phục snapshot trong `finally` sau mỗi nhánh; Undo/Redo của người chơi không tham gia tìm kiếm. Ván thật không bị đổi bàn, màu, thời gian hoặc lịch sử. Khi chọn xong, chỉ tạo một Command gắn với ván thật để controller thực thi và ghi lịch sử bot thật.
 - Ngân sách mặc định: tối đa 512 nút Minimax, 0.6 giây tính theo thời gian thực và độ sâu 3. Không phải mọi lượt đều đạt độ sâu 3. Hết ngân sách giữ nước của tầng đã hoàn tất; nếu chưa hoàn tất tầng đầu, dùng nước hợp lệ ưu tiên về đích. Nước thắng ngay được nhận trước khi mở cây.
 - HardStrategy.start_search trả generator: yield None để nhường UI, cuối cùng yield Command đã chọn. Controller đặt mục tiêu khoảng 8ms công việc mỗi khung hình, không dùng sleep/thread; một đơn vị nhỏ có thể vượt nhẹ mục tiêu tùy máy. Đây là ngân sách tính toán, không phải đồng hồ giới hạn lượt người.
 - Undo/Redo, Chơi lại, Về menu, đóng cửa sổ hoặc rời BotTurnState đều đóng generator đang chạy. Vì chỉ dùng bản sao, tác vụ bị hủy không để lại nước đi muộn trên ván thật.
 - last_stats ghi nodes, cutoffs, completed_depth, limited để chẩn đoán; không hiển thị thông số kỹ thuật trong luồng chơi.
 
 Vai trò các pattern:
-- Command: MoveCommand/PlaceWallCommand có execute/undo/redo, là đơn vị hành động và lịch sử.
+- Command: MoveCommand/PlaceWallCommand đóng gói hành động; CommandInvoker thực thi lệnh và quản lý Undo/Redo theo cấu hình của phiên.
 - Strategy: EasyStrategy/MediumStrategy/HardStrategy cùng giao diện BotStrategy; cấp khó thêm tìm kiếm tăng dần cho UI.
 - Factory: BotStrategyFactory tạo đúng Strategy từ easy/medium/hard, từ chối cấp không hỗ trợ.
 - State: AppState định nghĩa xử lý/cập nhật/vẽ; MenuState chỉ chọn chế độ, HumanTurnState cập nhật lượt người/đồng hồ, BotTurnState mới được tiến tìm kiếm, GameOverState dừng giờ và đánh tiếp nhưng giữ Undo/Redo/điều hướng. PlayingState dùng chung cách vẽ và điều hướng trong ván; AppController đồng bộ State sau hành động, hết giờ hoặc hoàn tác.

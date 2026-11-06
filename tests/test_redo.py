@@ -11,7 +11,7 @@ import pygame
 
 from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
-from tests.support import start_game, menu_frames
+from tests.support import start_game, menu_frames, execute_command
 from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -29,7 +29,7 @@ class RedoTests(unittest.TestCase):
         command = MoveCommand(self.game, (1, 4))
         self.assertFalse(command.redo())
         self.assertFalse(self.game.redo_round())
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         before = self.game.capture_state()
         self.assertFalse(command.redo())
         self.assertEqual(self.game.capture_state(), before)
@@ -38,12 +38,12 @@ class RedoTests(unittest.TestCase):
     def test_command_redo_repeats_without_performing(self):
         initial = self.game.capture_state()
         command = MoveCommand(self.game, (1, 4))
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         after = self.game.capture_state()
         for _ in range(3):
             self.assertTrue(command.undo())
             self.assertEqual(self.game.capture_state(), initial)
-            self.assertFalse(command.execute())
+            self.assertFalse(execute_command(command))
             with patch.object(command, "_perform", side_effect=AssertionError("Không đánh lại")):
                 self.assertTrue(command.redo())
             self.assertEqual(self.game.capture_state(), after)
@@ -55,8 +55,8 @@ class RedoTests(unittest.TestCase):
     def test_command_redo_order(self):
         human = MoveCommand(self.game, (1, 4))
         bot = MoveCommand(self.game, (7, 4))
-        self.assertTrue(human.execute())
-        self.assertTrue(bot.execute())
+        self.assertTrue(execute_command(human))
+        self.assertTrue(execute_command(bot))
         after = self.game.capture_state()
         self.assertTrue(self.game.undo_round())
         self.assertFalse(bot.redo())
@@ -69,8 +69,8 @@ class RedoTests(unittest.TestCase):
     def test_redo_restores_walls_and_owners(self):
         human = PlaceWallCommand(self.game, "horizontal", 2, 2)
         bot = PlaceWallCommand(self.game, "vertical", 5, 5)
-        self.assertTrue(human.execute())
-        self.assertTrue(bot.execute())
+        self.assertTrue(execute_command(human))
+        self.assertTrue(execute_command(bot))
         after = self.game.capture_state()
         self.assertTrue(self.game.undo_round())
         with patch.object(human, "redo", wraps=human.redo) as redo_human, \
@@ -84,11 +84,11 @@ class RedoTests(unittest.TestCase):
 
     # Undo nhiều vòng rồi Redo từng vòng theo thứ tự thời gian, không nhảy mất lượt.
     def test_multiple_rounds_and_mixed_undo_redo(self):
-        self.assertTrue(MoveCommand(self.game, (1, 4)).execute())
-        self.assertTrue(MoveCommand(self.game, (7, 4)).execute())
+        self.assertTrue(execute_command(MoveCommand(self.game, (1, 4))))
+        self.assertTrue(execute_command(MoveCommand(self.game, (7, 4))))
         first = self.game.capture_state()
-        self.assertTrue(PlaceWallCommand(self.game, "vertical", 3, 3).execute())
-        self.assertTrue(MoveCommand(self.game, (6, 4)).execute())
+        self.assertTrue(execute_command(PlaceWallCommand(self.game, "vertical", 3, 3)))
+        self.assertTrue(execute_command(MoveCommand(self.game, (6, 4))))
         second = self.game.capture_state()
         self.assertTrue(self.game.undo_round())
         self.assertTrue(self.game.undo_round())
@@ -105,16 +105,16 @@ class RedoTests(unittest.TestCase):
 
     # Chỉ hành động mới thành công mới xóa Redo; lỗi nước đi/tường và preview giữ nhánh.
     def test_branching_and_failed_actions(self):
-        self.assertTrue(MoveCommand(self.game, (1, 4)).execute())
-        self.assertTrue(MoveCommand(self.game, (7, 4)).execute())
+        self.assertTrue(execute_command(MoveCommand(self.game, (1, 4))))
+        self.assertTrue(execute_command(MoveCommand(self.game, (7, 4))))
         old_commands = self.game.command_history.copy()
         self.assertTrue(self.game.undo_round())
         redo = self.game.redo_history.copy()
-        self.assertFalse(MoveCommand(self.game, (5, 5)).execute())
-        self.assertFalse(PlaceWallCommand(self.game, "vertical", 8, 8).execute())
+        self.assertFalse(execute_command(MoveCommand(self.game, (5, 5))))
+        self.assertFalse(execute_command(PlaceWallCommand(self.game, "vertical", 8, 8)))
         self.assertTrue(self.game.can_place_wall_current_player("horizontal", 3, 3))
         self.assertEqual(self.game.redo_history, redo)
-        self.assertTrue(PlaceWallCommand(self.game, "horizontal", 3, 3).execute())
+        self.assertTrue(execute_command(PlaceWallCommand(self.game, "horizontal", 3, 3)))
         self.assertEqual(self.game.redo_history, [])
         self.assertFalse(self.game.can_redo)
         for command in old_commands:
@@ -124,11 +124,11 @@ class RedoTests(unittest.TestCase):
     def test_bfs_rejection_preserves_redo(self):
         self.game.players[0].row, self.game.players[0].col = 0, 0
         self.assertTrue(self.game.board.place_wall("horizontal", 0, 0))
-        self.assertTrue(PlaceWallCommand(self.game, "vertical", 4, 4).execute())
-        self.assertTrue(MoveCommand(self.game, (7, 4)).execute())
+        self.assertTrue(execute_command(PlaceWallCommand(self.game, "vertical", 4, 4)))
+        self.assertTrue(execute_command(MoveCommand(self.game, (7, 4))))
         after = self.game.capture_state()
         self.assertTrue(self.game.undo_round())
-        self.assertFalse(PlaceWallCommand(self.game, "vertical", 0, 1).execute())
+        self.assertFalse(execute_command(PlaceWallCommand(self.game, "vertical", 0, 1)))
         self.assertTrue(self.game.redo_round())
         self.assertEqual(self.game.capture_state(), after)
 
@@ -141,8 +141,8 @@ class RedoTests(unittest.TestCase):
                 self.game.players[1].row, self.game.players[1].col = 5, 4
                 if diagonal:
                     self.assertTrue(self.game.board.place_wall("horizontal", 5, 4))
-                self.assertTrue(MoveCommand(self.game, (5, 3) if diagonal else (6, 4)).execute())
-                self.assertTrue(MoveCommand(self.game, (4, 4)).execute())
+                self.assertTrue(execute_command(MoveCommand(self.game, (5, 3) if diagonal else (6, 4))))
+                self.assertTrue(execute_command(MoveCommand(self.game, (4, 4))))
                 after = self.game.capture_state()
                 self.assertTrue(self.game.undo_round())
                 self.assertTrue(self.game.redo_round())
@@ -156,12 +156,12 @@ class RedoTests(unittest.TestCase):
                 if winner == 0:
                     self.game.players[0].row = 7
                     self.game.players[1].col = 0
-                    self.assertTrue(MoveCommand(self.game, (8, 4)).execute())
+                    self.assertTrue(execute_command(MoveCommand(self.game, (8, 4))))
                 else:
                     self.game.players[0].col = 0
                     self.game.players[1].row = 1
-                    self.assertTrue(PlaceWallCommand(self.game, "horizontal", 5, 5).execute())
-                    self.assertTrue(MoveCommand(self.game, (0, 4)).execute())
+                    self.assertTrue(execute_command(PlaceWallCommand(self.game, "horizontal", 5, 5)))
+                    self.assertTrue(execute_command(MoveCommand(self.game, (0, 4))))
                 after = self.game.capture_state()
                 self.assertTrue(self.game.undo_round())
                 self.assertTrue(self.game.redo_round())
@@ -172,7 +172,7 @@ class RedoTests(unittest.TestCase):
     # Reset xóa cả hai ngăn; lệnh cũ không được Redo xuyên qua ván mới hoặc đổi chế độ.
     def test_reset_and_two_player_mode(self):
         command = MoveCommand(self.game, (1, 4))
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertTrue(self.game.undo_round())
         self.game.reset()
         self.assertEqual(self.game.redo_history, [])
@@ -184,7 +184,7 @@ class RedoTests(unittest.TestCase):
     # Tránh đè snapshot lên bàn nếu có thay đổi trực tiếp ngoài luồng Command.
     def test_redo_rejects_different_current_state(self):
         command = MoveCommand(self.game, (1, 4))
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertTrue(command.undo())
         self.game.players[0].col = 3
         before = self.game.capture_state()

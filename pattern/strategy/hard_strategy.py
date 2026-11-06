@@ -119,11 +119,14 @@ class HardStrategy(BotStrategy):
         for action in actions:
             self._check_budget(context)
             command = self._command(game, action)
-            if command.execute():
+            before_state = game.capture_state()
+            if game.command_invoker.execute(command):
                 try:
                     ranked.append((self._evaluate(game, context, ply + 1), action))
                 finally:
-                    command.undo()
+                    game.restore_state(before_state)
+            else:
+                game.restore_state(before_state)
             # Nhường lại UI sau khi bản sao đã được hoàn nguyên.
             yield None
         ranked.sort(key=lambda item: item[0], reverse=maximizing)
@@ -145,12 +148,14 @@ class HardStrategy(BotStrategy):
         best = float("-inf") if maximizing else float("inf")
         for _, action in actions:
             command = self._command(game, action)
-            if not command.execute():
+            before_state = game.capture_state()
+            if not game.command_invoker.execute(command):
+                game.restore_state(before_state)
                 continue
             try:
                 value = yield from self._minimax(game, depth - 1, alpha, beta, context, ply + 1)
             finally:
-                command.undo()
+                game.restore_state(before_state)
             if maximizing:
                 best = max(best, value)
                 alpha = max(alpha, best)
@@ -171,7 +176,8 @@ class HardStrategy(BotStrategy):
         if fallback is None:
             return
         best_action = ("move", *fallback.destination)
-        simulation = Game(mode="bot", bot_level="hard", human_first=game.human_first)
+        simulation = Game(mode="bot", bot_level="hard", human_first=game.human_first,
+                          history_enabled=False)
         simulation.restore_state(game.capture_state())
         try:
             winning = [cell for cell in game.get_legal_moves() if cell[0] == game.current_player.goal_row]
@@ -188,13 +194,15 @@ class HardStrategy(BotStrategy):
                         values = []
                         for _, action in actions:
                             command = self._command(simulation, action)
-                            if not command.execute():
+                            before_state = simulation.capture_state()
+                            if not simulation.command_invoker.execute(command):
+                                simulation.restore_state(before_state)
                                 continue
                             try:
                                 value = yield from self._minimax(simulation, depth - 1,
                                                                  float("-inf"), float("inf"), context, 1)
                             finally:
-                                command.undo()
+                                simulation.restore_state(before_state)
                             values.append((value, action))
                         if values:
                             best_score = max(score for score, _ in values)

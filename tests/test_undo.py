@@ -11,7 +11,7 @@ import pygame
 
 from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
-from tests.support import start_game, menu_frames
+from tests.support import start_game, menu_frames, execute_command
 from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -29,24 +29,24 @@ class UndoTests(unittest.TestCase):
         before = self.game.capture_state()
         command = MoveCommand(self.game, (1, 4))
         self.assertFalse(command.undo())
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         after = self.game.capture_state()
-        self.assertFalse(command.execute())
+        self.assertFalse(execute_command(command))
         self.assertEqual(self.game.capture_state(), after)
         self.assertEqual(self.game.command_history, [command])
         self.assertTrue(command.undo())
         self.assertEqual(self.game.capture_state(), before)
         self.assertEqual(self.game.command_history, [])
         self.assertFalse(command.undo())
-        self.assertFalse(command.execute())
+        self.assertFalse(execute_command(command))
 
     # Undo tường khôi phục cả cạnh bị chặn, màu sở hữu và số tường cho cả hai phe.
     def test_wall_commands_undo_both_owners(self):
         before = self.game.capture_state()
         human = PlaceWallCommand(self.game, "horizontal", 2, 2)
         bot = PlaceWallCommand(self.game, "vertical", 5, 5)
-        self.assertTrue(human.execute())
-        self.assertTrue(bot.execute())
+        self.assertTrue(execute_command(human))
+        self.assertTrue(execute_command(bot))
         self.assertEqual(len(self.game.board.blocked_edges), 4)
         self.assertEqual([p.walls_remaining for p in self.game.players], [9, 9])
         self.assertTrue(self.game.undo_round())
@@ -59,9 +59,9 @@ class UndoTests(unittest.TestCase):
     def test_commands_require_reverse_order(self):
         first = MoveCommand(self.game, (1, 4))
         second = MoveCommand(self.game, (7, 4))
-        self.assertTrue(first.execute())
+        self.assertTrue(execute_command(first))
         middle = self.game.capture_state()
-        self.assertTrue(second.execute())
+        self.assertTrue(execute_command(second))
         after = self.game.capture_state()
         self.assertFalse(first.undo())
         self.assertEqual(self.game.capture_state(), after)
@@ -72,7 +72,7 @@ class UndoTests(unittest.TestCase):
     # Khi bot chưa đi chỉ lùi nước người; bot không còn lượt để đáp trả sau Undo.
     def test_undo_before_bot_response(self):
         before = self.game.capture_state()
-        self.assertTrue(MoveCommand(self.game, (1, 4)).execute())
+        self.assertTrue(execute_command(MoveCommand(self.game, (1, 4))))
         self.assertTrue(self.game.is_bot_turn)
         self.assertTrue(self.game.undo_round())
         self.assertEqual(self.game.capture_state(), before)
@@ -89,19 +89,19 @@ class UndoTests(unittest.TestCase):
                     self.assertTrue(self.game.board.place_wall("horizontal", 5, 4))
                 before = self.game.capture_state()
                 destination = (5, 3) if diagonal else (6, 4)
-                self.assertTrue(MoveCommand(self.game, destination).execute())
-                self.assertTrue(MoveCommand(self.game, (4, 4)).execute())
+                self.assertTrue(execute_command(MoveCommand(self.game, destination)))
+                self.assertTrue(execute_command(MoveCommand(self.game, (4, 4))))
                 self.assertTrue(self.game.undo_round())
                 self.assertEqual(self.game.capture_state(), before)
 
     # Mỗi lần Undo lùi đúng một cặp lượt, không lùi mất các vòng trước.
     def test_repeated_round_undo(self):
         initial = self.game.capture_state()
-        self.assertTrue(MoveCommand(self.game, (1, 4)).execute())
-        self.assertTrue(MoveCommand(self.game, (7, 4)).execute())
+        self.assertTrue(execute_command(MoveCommand(self.game, (1, 4))))
+        self.assertTrue(execute_command(MoveCommand(self.game, (7, 4))))
         first_round = self.game.capture_state()
-        self.assertTrue(PlaceWallCommand(self.game, "vertical", 3, 3).execute())
-        self.assertTrue(MoveCommand(self.game, (6, 4)).execute())
+        self.assertTrue(execute_command(PlaceWallCommand(self.game, "vertical", 3, 3)))
+        self.assertTrue(execute_command(MoveCommand(self.game, (6, 4))))
         self.assertTrue(self.game.undo_round())
         self.assertEqual(self.game.capture_state(), first_round)
         self.assertEqual(len(self.game.command_history), 2)
@@ -112,13 +112,13 @@ class UndoTests(unittest.TestCase):
 
     # Nước sai, tường chồng/cắt và xem trước không chiếm chỗ trong lịch sử.
     def test_failures_and_preview_do_not_enter_history(self):
-        self.assertFalse(MoveCommand(self.game, (5, 5)).execute())
+        self.assertFalse(execute_command(MoveCommand(self.game, (5, 5))))
         self.assertFalse(self.game.can_undo)
-        self.assertTrue(PlaceWallCommand(self.game, "horizontal", 2, 2).execute())
+        self.assertTrue(execute_command(PlaceWallCommand(self.game, "horizontal", 2, 2)))
         history = self.game.command_history.copy()
         for wall in [("horizontal", 2, 2), ("horizontal", 2, 3), ("vertical", 2, 2)]:
             command = PlaceWallCommand(self.game, *wall)
-            self.assertFalse(command.execute())
+            self.assertFalse(execute_command(command))
             self.assertFalse(command.undo())
         self.game.can_place_wall_current_player("horizontal", 5, 5)
         self.assertEqual(self.game.command_history, history)
@@ -131,7 +131,7 @@ class UndoTests(unittest.TestCase):
         self.assertTrue(self.game.board.place_wall("horizontal", 0, 0))
         before = self.game.capture_state()
         command = PlaceWallCommand(self.game, "vertical", 0, 1)
-        self.assertFalse(command.execute())
+        self.assertFalse(execute_command(command))
         self.assertFalse(command.undo())
         self.assertEqual(self.game.capture_state(), before)
         self.assertEqual(self.game.command_history, [])
@@ -145,13 +145,13 @@ class UndoTests(unittest.TestCase):
                     self.game.players[0].row = 7
                     self.game.players[1].col = 0
                     before = self.game.capture_state()
-                    self.assertTrue(MoveCommand(self.game, (8, 4)).execute())
+                    self.assertTrue(execute_command(MoveCommand(self.game, (8, 4))))
                 else:
                     self.game.players[0].col = 0
                     self.game.players[1].row = 1
                     before = self.game.capture_state()
-                    self.assertTrue(PlaceWallCommand(self.game, "horizontal", 5, 5).execute())
-                    self.assertTrue(MoveCommand(self.game, (0, 4)).execute())
+                    self.assertTrue(execute_command(PlaceWallCommand(self.game, "horizontal", 5, 5)))
+                    self.assertTrue(execute_command(MoveCommand(self.game, (0, 4))))
                 self.assertIs(self.game.winner, self.game.players[winner])
                 self.assertTrue(self.game.undo_round())
                 self.assertEqual(self.game.capture_state(), before)
@@ -163,11 +163,11 @@ class UndoTests(unittest.TestCase):
     def test_reset_invalidates_old_commands(self):
         pending = MoveCommand(self.game, (0, 3))
         executed = MoveCommand(self.game, (1, 4))
-        self.assertTrue(executed.execute())
+        self.assertTrue(execute_command(executed))
         self.game.reset()
         before = self.game.capture_state()
         self.assertFalse(self.game.can_undo)
-        self.assertFalse(pending.execute())
+        self.assertFalse(execute_command(pending))
         self.assertFalse(executed.undo())
         self.assertEqual(self.game.capture_state(), before)
 
@@ -176,7 +176,7 @@ class UndoTests(unittest.TestCase):
         now = [100.0]
         game = Game(time_source=lambda: now[0])
         command = MoveCommand(game, (1, 4))
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertEqual(game.command_history, [])
         self.assertFalse(command.undo())
         self.assertFalse(game.undo_round())

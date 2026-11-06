@@ -17,7 +17,7 @@ from pattern.strategy import BotStrategy
 from pattern.strategy import BotStrategyFactory
 from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
-from tests.support import start_game, menu_frames
+from tests.support import start_game, menu_frames, execute_command
 from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
@@ -49,11 +49,12 @@ class HardBotTests(unittest.TestCase):
         values = []
         for destination in game.get_legal_moves():
             command = MoveCommand(game, destination)
+            before = game.capture_state()
             self.assertTrue(command.execute())
             try:
                 values.append(self.brute_value(game, depth - 1, context, ply + 1))
             finally:
-                self.assertTrue(command.undo())
+                game.restore_state(before)
         return max(values) if maximizing else min(values)
 
     # Factory đưa cấp khó vào cùng giao diện Strategy và giữ hai cấp cũ hoạt động.
@@ -74,7 +75,7 @@ class HardBotTests(unittest.TestCase):
         self.assertEqual(self.game.capture_state(), before)
         self.assertIsInstance(command, MoveCommand)
         self.assertEqual(command.destination, (0, 4))
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertIs(self.game.winner, self.game.players[1])
         self.assertIsNone(self.strategy.choose_command(self.game))
 
@@ -89,7 +90,7 @@ class HardBotTests(unittest.TestCase):
         self.assertEqual(self.game.command_history, [])
         self.assertEqual(self.game.redo_history, [])
         self.assertIsInstance(command, PlaceWallCommand)
-        self.assertTrue(command.execute())
+        self.assertTrue(execute_command(command))
         self.assertFalse(any(cell[0] == 8 for cell in self.game.get_legal_moves()))
         self.assertEqual(self.game.players[1].walls_remaining, 9)
         self.assertTrue(self.game.path_finder.both_players_have_paths(self.game.board, self.game.players))
@@ -99,15 +100,19 @@ class HardBotTests(unittest.TestCase):
         self.game.current_turn = 1
         for player in self.game.players:
             player.walls_remaining = 0
+        simulation = Game(mode="bot", bot_level="hard", history_enabled=False)
+        simulation.restore_state(self.game.capture_state())
         for depth in (2, 3):
             with self.subTest(depth=depth):
                 context = _SearchContext(self.strategy)
-                expected = self.brute_value(self.game, depth, context, 0)
-                before = self.game.capture_state()
+                expected = self.brute_value(simulation, depth, context, 0)
+                before = simulation.capture_state()
                 actual = self.result(self.strategy._minimax(
-                    self.game, depth, float("-inf"), float("inf"), context, 0))
+                    simulation, depth, float("-inf"), float("inf"), context, 0))
                 self.assertEqual(actual, expected)
-                self.assertEqual(self.game.capture_state(), before)
+                self.assertEqual(simulation.capture_state(), before)
+                self.assertEqual(simulation.command_history, [])
+                self.assertEqual(simulation.redo_history, [])
         self.assertGreater(context.cutoffs, 0)
 
     # Lệnh gốc được chọn phải thuộc tập tốt nhất tính bằng vét cạn 3 hành động.
@@ -117,15 +122,19 @@ class HardBotTests(unittest.TestCase):
         self.game.players[1].row, self.game.players[1].col = 5, 4
         for player in self.game.players:
             player.walls_remaining = 0
+        simulation = Game(mode="bot", bot_level="hard", history_enabled=False)
+        simulation.restore_state(self.game.capture_state())
         context = _SearchContext(self.strategy)
         values = {}
-        for destination in self.game.get_legal_moves():
-            command = MoveCommand(self.game, destination)
+        for destination in simulation.get_legal_moves():
+            command = MoveCommand(simulation, destination)
+            before = simulation.capture_state()
             self.assertTrue(command.execute())
             try:
-                values[destination] = self.brute_value(self.game, 2, context, 1)
+                values[destination] = self.brute_value(simulation, 2, context, 1)
             finally:
-                self.assertTrue(command.undo())
+                simulation.restore_state(before)
+        self.assertEqual(simulation.command_history, [])
         command = self.strategy.choose_command(self.game)
         self.assertEqual(values[command.destination], max(values.values()))
         self.assertEqual(self.strategy.last_stats["completed_depth"], 3)
@@ -161,12 +170,12 @@ class HardBotTests(unittest.TestCase):
                 self.assertIn(command.destination, self.game.get_legal_moves())
                 if not blocked:
                     self.assertEqual(command.destination, (0, 4))
-                self.assertTrue(command.execute())
+                self.assertTrue(execute_command(command))
 
     # Đóng generator giữa chừng hoặc gặp lỗi đánh giá không làm đổi ván/hai lịch sử thật.
     def test_cancel_and_error_leave_real_game_unchanged(self):
-        self.assertTrue(MoveCommand(self.game, (1, 4)).execute())
-        self.assertTrue(MoveCommand(self.game, (7, 4)).execute())
+        self.assertTrue(execute_command(MoveCommand(self.game, (1, 4))))
+        self.assertTrue(execute_command(MoveCommand(self.game, (7, 4))))
         self.assertTrue(self.game.command_history[-1].undo())
         before = self.game.capture_state()
         history = self.game.command_history.copy()
@@ -188,10 +197,10 @@ class HardBotTests(unittest.TestCase):
         self.strategy.max_depth = 2
         self.strategy.wall_limit = 2
         for step in range(12):
-            self.assertTrue(MoveCommand(self.game, (0, 5 if step % 2 == 0 else 6)).execute())
+            self.assertTrue(execute_command(MoveCommand(self.game, (0, 5 if step % 2 == 0 else 6))))
             command = self.strategy.choose_command(self.game)
             self.assertIsNotNone(command)
-            self.assertTrue(command.execute())
+            self.assertTrue(execute_command(command))
             self.assertTrue(self.game.path_finder.both_players_have_paths(self.game.board, self.game.players))
             if self.game.winner is not None:
                 break

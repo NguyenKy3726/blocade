@@ -12,8 +12,7 @@ class PlayingState(AppState):
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
                 and controller.view.menu_rect(controller.game).collidepoint(event.pos)):
             controller.selected_position = None
-            controller.game.command_history.clear()
-            controller.game.redo_history.clear()
+            controller.command_invoker.clear()
             controller.view.reset_effects(controller.game)
             app.change_state(MenuState())
             return True
