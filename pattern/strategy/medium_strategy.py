@@ -1,8 +1,8 @@
-from game.bot.strategy import BotStrategy
-from game.commands import MoveCommand, PlaceWallCommand
+from pattern.strategy.bot_strategy import BotStrategy
+from pattern.command import MoveCommand, PlaceWallCommand
 
 
-# Bot trung bình đánh giá một hành động bằng khoảng cách hai phe, có cân nhắc tường.
+# Chiến lược trung bình đánh giá đường đi và hiệu quả đặt tường.
 class MediumStrategy(BotStrategy):
     # Ước lượng số lượt tới đích, dùng nước đầu hợp lệ để tính cả nhảy qua đối thủ.
     def _turns_to_goal(self, game, player, distances):

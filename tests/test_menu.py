@@ -9,7 +9,7 @@ import pygame
 
 from game.game import Game
 from tests.support import start_game
-from ui.app_controller import AppController
+from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
 from ui.menu_view import MenuView

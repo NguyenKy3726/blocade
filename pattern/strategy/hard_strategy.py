@@ -1,27 +1,12 @@
 from random import choice
 from time import perf_counter
 
-from game.bot.easy import EasyStrategy
-from game.bot.strategy import BotStrategy
-from game.commands import MoveCommand, PlaceWallCommand
+from pattern.strategy.easy_strategy import EasyStrategy
+from pattern.strategy.bot_strategy import BotStrategy
+from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
-
-
-# Dừng một tầng tìm kiếm khi hết ngân sách, giữ kết quả của tầng đã hoàn tất.
-class _SearchLimit(Exception):
-    pass
-
-
-# Dữ liệu chỉ tồn tại trong một lần suy nghĩ, không trộn với lịch sử ván thật.
-class _SearchContext:
-    # Lưu giới hạn, bộ đếm và cache bản đồ BFS theo cấu hình tường.
-    def __init__(self, strategy):
-        self.deadline = strategy.clock() + strategy.time_budget
-        self.nodes = 0
-        self.cutoffs = 0
-        self.completed_depth = 0
-        self.limited = False
-        self.maps = {}
+from pattern.strategy.search_context import _SearchContext
+from pattern.strategy.search_limit import _SearchLimit
 
 
 # Bot khó dùng Minimax/Alpha–Beta trên cây rút gọn và tìm sâu dần tới 3 hành động.

@@ -11,17 +11,18 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from game.bot.hard import HardStrategy, _SearchContext
-from game.bot.strategy import BotStrategy
-from game.bot.strategy_factory import BotStrategyFactory
-from game.commands import MoveCommand, PlaceWallCommand
+from pattern.strategy import HardStrategy
+from pattern.strategy.search_context import _SearchContext
+from pattern.strategy import BotStrategy
+from pattern.strategy import BotStrategyFactory
+from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
 from tests.support import start_game, menu_frames
-from ui.app_controller import AppController
+from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
 from ui.menu_view import MenuView
-from ui.states import MenuState, HumanTurnState, BotTurnState, GameOverState
+from pattern.state import MenuState, HumanTurnState, BotTurnState, GameOverState
 
 
 # Kiểm tra Minimax/Alpha–Beta, giới hạn và tính độc lập của ván mô phỏng.

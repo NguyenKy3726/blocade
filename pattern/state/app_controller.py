@@ -1,6 +1,6 @@
 import pygame
 
-from ui.states import MenuState, HumanTurnState, BotTurnState, GameOverState
+from pattern.state import MenuState, HumanTurnState, BotTurnState, GameOverState
 
 
 # Context của State pattern: giao công việc cho trạng thái hiện tại.

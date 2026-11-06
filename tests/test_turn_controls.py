@@ -10,7 +10,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame
 
 from game.game import Game
-from game.commands import MoveCommand, PlaceWallCommand
+from pattern.command import MoveCommand, PlaceWallCommand
 from tests.support import menu_frames, settle_effects, assert_wood_color
 from ui.controller import GameController
 from ui.game_view import GameView

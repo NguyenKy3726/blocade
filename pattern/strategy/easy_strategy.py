@@ -1,8 +1,8 @@
-from game.bot.strategy import BotStrategy
-from game.commands import MoveCommand
+from pattern.strategy.bot_strategy import BotStrategy
+from pattern.command import MoveCommand
 
 
-# Bot dễ chọn nước đi về đích, dùng chung luật di chuyển với người chơi.
+# Chiến lược dễ chọn nước hợp lệ gần hàng đích nhất theo BFS.
 class EasyStrategy(BotStrategy):
     # Chỉ tạo Command, chưa đổi bàn cờ; BFS đánh giá đường đi qua các cạnh chưa bị chặn.
     def choose_command(self, game):

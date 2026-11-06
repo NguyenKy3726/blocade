@@ -1,6 +1,6 @@
 import unittest
 
-from game.commands import MoveCommand, PlaceWallCommand
+from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
 
 

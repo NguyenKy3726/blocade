@@ -8,15 +8,15 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from game.commands import MoveCommand, PlaceWallCommand
+from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
 from tests.support import start_game
-from ui.app_controller import AppController
+from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
 from ui.menu_view import MenuView
 from ui.sound_effects import SoundEffects
-from ui.states import GameOverState, HumanTurnState, MenuState
+from pattern.state import GameOverState, HumanTurnState, MenuState
 
 
 # Kiểm tra hiệu ứng mới qua controller thật, dùng giờ giả thay vì chờ animation.

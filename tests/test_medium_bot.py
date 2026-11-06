@@ -9,15 +9,15 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame
 
 from game.board import Board
-from game.bot.easy import EasyStrategy
-from game.bot.medium import MediumStrategy
-from game.bot.strategy import BotStrategy
-from game.bot.strategy_factory import BotStrategyFactory
-from game.commands import MoveCommand, PlaceWallCommand
+from pattern.strategy import EasyStrategy
+from pattern.strategy import MediumStrategy
+from pattern.strategy import BotStrategy
+from pattern.strategy import BotStrategyFactory
+from pattern.command import MoveCommand, PlaceWallCommand
 from game.game import Game
 from game.pathfinder import PathFinder
 from tests.support import start_game, settle_effects, assert_wood_color
-from ui.app_controller import AppController
+from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
 from ui.menu_view import MenuView

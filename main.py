@@ -4,7 +4,7 @@ from game.game import Game
 from ui.game_view import GameView
 from ui.controller import GameController
 from ui.menu_view import MenuView
-from ui.app_controller import AppController
+from pattern.state import AppController
 
 
 # Dùng một cửa sổ cho cả menu và bàn cờ; ứng dụng bắt đầu tại menu.

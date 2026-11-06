@@ -2,8 +2,8 @@ from time import perf_counter
 
 import pygame
 
-from game.commands import MoveCommand, PlaceWallCommand
-from game.bot.strategy_factory import BotStrategyFactory
+from pattern.command import MoveCommand, PlaceWallCommand
+from pattern.strategy import BotStrategyFactory
 
 
 # Chuyển click chuột thành Command đi quân hoặc đặt tường.

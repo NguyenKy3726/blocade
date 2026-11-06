@@ -11,11 +11,11 @@ import pygame
 
 from game.game import Game
 from tests.support import start_game, settle_effects, assert_wood_color
-from ui.app_controller import AppController
+from pattern.state import AppController
 from ui.controller import GameController
 from ui.game_view import GameView
 from ui.menu_view import MenuView
-from ui.states import BotLevelState, BotTurnState, HelpState, HumanTurnState, MenuState, TurnOrderState
+from pattern.state import BotLevelState, BotTurnState, HelpState, HumanTurnState, MenuState, TurnOrderState
 
 
 # Kiểm tra font, các trang menu và chơi trước/sau qua giao diện thật headless.

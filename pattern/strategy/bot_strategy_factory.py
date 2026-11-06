@@ -1,11 +1,11 @@
 from random import choice
 
-from game.bot.easy import EasyStrategy
-from game.bot.hard import HardStrategy
-from game.bot.medium import MediumStrategy
+from pattern.strategy.easy_strategy import EasyStrategy
+from pattern.strategy.hard_strategy import HardStrategy
+from pattern.strategy.medium_strategy import MediumStrategy
 
 
-# Factory tập trung việc tạo đúng chiến lược theo cấp được chọn trên menu.
+# Factory tạo đúng chiến lược bot theo cấp độ người chơi chọn.
 class BotStrategyFactory:
     # Không mặc định sang cấp khác nếu tên cấp không hợp lệ.
     @staticmethod
