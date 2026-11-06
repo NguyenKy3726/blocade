@@ -1,6 +1,6 @@
 import unittest
 
-from pattern.command import MoveCommand, PlaceWallCommand
+from pattern.command import Command, CommandInvoker, MoveCommand, PlaceWallCommand
 from game.game import Game
 
 
@@ -10,6 +10,17 @@ class CommandTests(unittest.TestCase):
     def setUp(self):
         self.now = 100.0
         self.game = Game(time_source=lambda: self.now)
+
+    # Kiểm tra các vai trò Command và việc Invoker gọi ConcreteCommand.
+    def test_command_roles_match_pattern(self):
+        self.assertTrue(hasattr(Command, "execute"))
+        invoker = CommandInvoker()
+        self.assertFalse(invoker.execute())
+        command = MoveCommand(self.game, (1, 4))
+        self.assertIs(command.receiver, self.game)
+        self.assertTrue(invoker.execute(command))
+        self.assertIs(invoker.command, command)
+        self.assertEqual(self.game.players[0].position, (1, 4))
 
     # Chụp trạng thái có thể bị ảnh hưởng khi thực hiện một lệnh.
     def snapshot(self):

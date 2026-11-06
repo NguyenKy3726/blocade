@@ -11,9 +11,14 @@ Mã nguồn pattern được đặt trong thư mục này và tách mỗi lớp 
 
 ## Command
 
-- `command/command.py`: lớp cơ sở chung cho lệnh.
-- `command/move_command.py` và `command/place_wall_command.py`: từng hành động là một lớp riêng.
-- Luật vẫn do `game/game.py` kiểm tra; Command chỉ đóng gói yêu cầu, thực thi và lịch sử Undo/Redo.
+- `command/command.py`: interface `Command`, tương ứng với `ICommand`; khai báo `execute()` và dùng chung phần quản lý lịch sử Undo/Redo.
+- `command/move_command.py` và `command/place_wall_command.py`: ConcreteCommand; mỗi lớp có `execute()` riêng và giữ dữ liệu cần cho hành động.
+- `command/invoker.py`: `CommandInvoker` giữ lệnh hiện tại và gọi `execute()`; đây là Invoker tách riêng.
+- `ui/controller.py` (`GameController`): Client; hiểu thao tác chuột, tạo ConcreteCommand rồi giao cho Invoker.
+- `game/game.py` (`Game`): Receiver; kiểm tra luật, BFS, giờ và cập nhật lượt/kết quả khi ConcreteCommand gọi hành động tương ứng.
+- Các chiến lược bot có thể tạo Command để mô phỏng tìm kiếm; hành động bot được chọn cuối cùng cũng đi qua `GameController` và `CommandInvoker`.
+
+Ánh xạ theo sơ đồ bài giảng: `GameController` → Client; `CommandInvoker` → Invoker; `Command` → ICommand; `MoveCommand`/`PlaceWallCommand` → ConcreteCommand; `Game` → Receiver. Command giữ tham chiếu Receiver và lệnh cụ thể gọi `receiver` khi `execute()` chạy.
 
 ## Strategy
 

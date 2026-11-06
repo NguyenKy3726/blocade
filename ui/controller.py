@@ -2,7 +2,7 @@ from time import perf_counter
 
 import pygame
 
-from pattern.command import MoveCommand, PlaceWallCommand
+from pattern.command import CommandInvoker, MoveCommand, PlaceWallCommand
 from pattern.strategy import BotStrategyFactory
 
 
@@ -12,6 +12,7 @@ class GameController:
     def __init__(self, game, view):
         self.game = game
         self.view = view
+        self.command_invoker = CommandInvoker()
         self.selected_position = None
         self.bot_strategy = BotStrategyFactory.create(game.bot_level)
         self.pending_search = None
@@ -73,7 +74,7 @@ class GameController:
         if command is None:
             return False
         before = self.game.capture_state()
-        if not command.execute():
+        if not self.command_invoker.execute(command):
             return False
         self.view.present_action(self.game, before)
         return True
