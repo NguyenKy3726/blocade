@@ -42,6 +42,10 @@ class GameView:
         self.info_panel_rect = pygame.Rect(
             680, self.board_y - 18, 325, self.board_extent + 36
         )
+        # Có thể chỉnh kích thước khung và vị trí chữ/hình kết quả tại đây.
+        self.victory_panel_rect = pygame.Rect(133, 270, 460, 258)
+        self.victory_message_center = (363, 365)
+        self.victory_pawn_positions = ((153, 365), (573, 365))
         self.player_card_top = 238
         self.player_card_height = 118
         self.player_card_gap = 27
@@ -289,16 +293,14 @@ class GameView:
         veil.fill((49, 34, 23, 120))
         self.screen.blit(veil, (self.board_x - 18, self.board_y - 18))
 
-        panel = pygame.Rect(105, 270, 516, 258)
-        self.theme.panel(self.screen, panel, (244, 225, 190), radius=20, seed=31)
+        self.theme.panel(
+            self.screen, self.victory_panel_rect, (244, 225, 190), radius=20, seed=31
+        )
         color = self.player_colors[game.players.index(game.winner)]
         title = self.title_font.render(self.victory_message(game), True, self.text_color)
-        self.screen.blit(title, title.get_rect(center=(363, 320)))
-        if game.mode != "bot":
-            name = self.font.render(game.winner.name, True, color)
-            self.screen.blit(name, name.get_rect(center=(363, 375)))
-        self.theme.pawn(self.screen, (153, 365), color)
-        self.theme.pawn(self.screen, (573, 365), color)
+        self.screen.blit(title, title.get_rect(center=self.victory_message_center))
+        for position in self.victory_pawn_positions:
+            self.theme.pawn(self.screen, position, color)
 
     # Vẽ toàn bộ giao diện theo trạng thái ván chơi hiện tại.
     def draw(self, game, selected_position=None, wall_preview=None):

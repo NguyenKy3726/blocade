@@ -132,6 +132,10 @@ class WoodUITests(unittest.TestCase):
                                   self.view.board_extent + 36, self.view.board_extent + 36)
         self.assertEqual(self.view.info_panel_rect.top, board_frame.top)
         self.assertEqual(self.view.info_panel_rect.bottom, board_frame.bottom)
+        self.assertEqual(self.view.victory_panel_rect.width, 460)
+        self.assertEqual(self.view.victory_panel_rect.centerx, self.view.board_x + self.view.board_extent // 2)
+        self.assertEqual(self.view.victory_message_center[1], self.view.victory_pawn_positions[0][1])
+        self.assertEqual(self.view.victory_message_center[1], self.view.victory_pawn_positions[1][1])
         first_bottom = self.view.player_card_top + self.view.player_card_height
         second_top = self.view.player_card_top + self.view.player_card_height + self.view.player_card_gap
         second_bottom = second_top + self.view.player_card_height
