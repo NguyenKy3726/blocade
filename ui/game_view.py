@@ -207,7 +207,7 @@ class GameView:
         if game.winner is None:
             status = f"Lượt hiện tại: {game.current_player.name}"
         else:
-            status = f"{game.winner.name} chiến thắng!"
+            status = self.victory_message(game)
 
         self.draw_text(status, self.font, self.text_color, info_x, 180)
 
@@ -247,6 +247,12 @@ class GameView:
 
         self.draw_text(game.notice, self.small_font, self.text_color, 70, 735)
 
+    # Hiển thị kết quả theo góc nhìn người chơi khi đấu bot.
+    def victory_message(self, game):
+        if game.mode == "bot":
+            return "Bạn thắng!" if game.winner is game.players[0] else "Bạn thua!"
+        return f"{game.winner.name} chiến thắng!"
+
     # Vẽ hai nút điều hướng ở cạnh phải khi đang chơi; sau thắng dùng khung riêng.
     def draw_navigation_buttons(self):
         for rect, text in ((self.restart_button_rect, "Chơi lại"),
@@ -273,10 +279,11 @@ class GameView:
         panel = pygame.Rect(105, 270, 516, 258)
         self.theme.panel(self.screen, panel, (244, 225, 190), radius=20, seed=31)
         color = self.player_colors[game.players.index(game.winner)]
-        title = self.title_font.render("Chiến thắng!", True, self.text_color)
+        title = self.title_font.render(self.victory_message(game), True, self.text_color)
         self.screen.blit(title, title.get_rect(center=(363, 320)))
-        name = self.font.render(game.winner.name, True, color)
-        self.screen.blit(name, name.get_rect(center=(363, 375)))
+        if game.mode != "bot":
+            name = self.font.render(game.winner.name, True, color)
+            self.screen.blit(name, name.get_rect(center=(363, 375)))
         self.theme.pawn(self.screen, (153, 365), color)
         self.theme.pawn(self.screen, (573, 365), color)
         self.theme.button(self.screen, self.victory_restart_button_rect, "Chơi lại", self.font)

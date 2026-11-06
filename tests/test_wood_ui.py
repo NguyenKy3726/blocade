@@ -139,6 +139,18 @@ class WoodUITests(unittest.TestCase):
         self.click(self.view.victory_menu_button_rect)
         self.assertIs(type(self.app.state), MenuState)
 
+    # Kết quả đấu bot được nói theo góc nhìn người chơi, không gọi bot là người thắng.
+    def test_bot_victory_message_uses_player_perspective(self):
+        self.game.reset(mode="bot")
+        self.game.winner = self.game.players[1]
+        self.assertEqual(self.view.victory_message(self.game), "Bạn thua!")
+        with patch.object(self.view, "draw_text", wraps=self.view.draw_text) as draw_text:
+            self.view.draw_info(self.game)
+        self.assertIn("Bạn thua!", [call.args[0] for call in draw_text.call_args_list])
+
+        self.game.winner = self.game.players[0]
+        self.assertEqual(self.view.victory_message(self.game), "Bạn thắng!")
+
     # Bật/tắt ở mọi màn hình giữ lựa chọn qua ván mới và không đổi dữ liệu game.
     def test_sound_toggle_persists_and_does_not_play_a_move(self):
         self.assertTrue(self.view.audio.enabled)
