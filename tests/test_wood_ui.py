@@ -115,7 +115,7 @@ class WoodUITests(unittest.TestCase):
             self.view.draw(self.game)
             self.assertEqual([call.args[0] for call in play.call_args_list], ["move", "move"])
 
-    # Lớp phủ chỉ hiện kết quả; các nút thường giữ vị trí và lịch sử bị khóa.
+    # Kết quả nằm trong khung trên bàn; nút bên phải giữ chỗ và lịch sử bị khóa.
     def test_victory_overlay_and_sidebar_controls(self):
         start_game(self.app, self.menu)
         self.game.players[0].row = 7
@@ -140,11 +140,13 @@ class WoodUITests(unittest.TestCase):
                          self.view.player_card_gap)
         self.assertEqual(self.view.restart_rect(self.game), restart_rect)
         self.assertEqual(self.view.menu_rect(self.game), menu_rect)
-        with patch.object(self.view.theme, "button") as draw_button, \
-                patch.object(self.view.theme, "pawn") as draw_pawn:
+        with patch.object(self.view.theme, "panel", wraps=self.view.theme.panel) as draw_panel, \
+                patch.object(self.view.theme, "button") as draw_button, \
+                patch.object(self.view.theme, "pawn", wraps=self.view.theme.pawn) as draw_pawn:
             self.view.draw_victory(self.game)
+            draw_panel.assert_called_once()
             draw_button.assert_not_called()
-            draw_pawn.assert_not_called()
+            self.assertEqual(draw_pawn.call_count, 2)
         with patch.object(self.view, "draw_undo_button") as draw_undo, \
                 patch.object(self.view, "draw_redo_button") as draw_redo:
             self.view.draw(self.game)

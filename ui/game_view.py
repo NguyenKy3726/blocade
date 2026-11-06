@@ -283,15 +283,22 @@ class GameView:
     def draw_redo_button(self, enabled):
         self.draw_history_button(self.redo_button_rect, "Redo", enabled)
 
-    # Phủ bàn cờ và chỉ hiện thông báo kết quả, không vẽ nút hoặc quân trang trí.
+    # Phủ bàn cờ, đặt thông báo trong khung kết quả và giữ nút điều hướng ở bảng bên.
     def draw_victory(self, game):
         veil = pygame.Surface((self.board_extent + 36, self.board_extent + 36), pygame.SRCALPHA)
         veil.fill((49, 34, 23, 120))
         self.screen.blit(veil, (self.board_x - 18, self.board_y - 18))
+
+        panel = pygame.Rect(105, 270, 516, 258)
+        self.theme.panel(self.screen, panel, (244, 225, 190), radius=20, seed=31)
+        color = self.player_colors[game.players.index(game.winner)]
         title = self.title_font.render(self.victory_message(game), True, self.text_color)
-        center = (self.board_x + self.board_extent // 2,
-                  self.board_y + self.board_extent // 2)
-        self.screen.blit(title, title.get_rect(center=center))
+        self.screen.blit(title, title.get_rect(center=(363, 320)))
+        if game.mode != "bot":
+            name = self.font.render(game.winner.name, True, color)
+            self.screen.blit(name, name.get_rect(center=(363, 375)))
+        self.theme.pawn(self.screen, (153, 365), color)
+        self.theme.pawn(self.screen, (573, 365), color)
 
     # Vẽ toàn bộ giao diện theo trạng thái ván chơi hiện tại.
     def draw(self, game, selected_position=None, wall_preview=None):
